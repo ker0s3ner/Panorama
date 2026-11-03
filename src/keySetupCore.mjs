@@ -124,6 +124,18 @@ export const KEY_SETUP_KEYS = Object.freeze([
     envVars: Object.freeze(['LL2_API_TOKEN']),
     tier: 'free',
   }),
+  Object.freeze({
+    id: 'cctv-lithuania',
+    title: 'LITHUANIA CCTV',
+    unlocks: msg('Lithuanian road cameras from Via Lietuva / Eismoinfo'),
+    getUrl: 'https://eismoinfo.lt/',
+    envVars: Object.freeze([
+      'CCTV_LITHUANIA_ENABLED',
+      'CCTV_LITHUANIA_MAX_SOURCES',
+    ]),
+    tier: 'free',
+    setting: true,
+  }),
 ]);
 
 /** Hostnames a Provider Settings request may arrive under or originate from. */
@@ -472,6 +484,7 @@ export function keySetupStatus(env = {}) {
       envVars: [...entry.envVars],
       tier: entry.tier,
       clientExposed: Boolean(entry.clientExposed),
+      values: entry.setting ? Object.fromEntries(entry.envVars.map((name, index) => [name, values[index]])) : undefined,
       set,
     };
   });

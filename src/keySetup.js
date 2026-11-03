@@ -301,12 +301,26 @@ function buildRow(documentRef, key) {
       const input = documentRef.createElement('input');
       // Passwords-style so a pasted key never shows on a shared or recorded
       // screen — this app gets screen-recorded a lot.
-      input.type = 'password';
+      const isToggle = key.setting && envVar.endsWith('_ENABLED');
+      input.type = isToggle ? 'checkbox' : key.setting ? 'number' : 'password';
+      if (isToggle) {
+        input.checked = key.values?.[envVar] === '1';
+        input.dataset.settingToggle = 'true';
+      }
       input.autocomplete = 'off';
       input.spellcheck = false;
       input.dataset.envVar = envVar;
       input.setAttribute('aria-label', envVar);
-      input.placeholder = key.set
+      if (key.setting) {
+        input.value =
+          key.values?.[envVar] ||
+          (envVar.endsWith('_MAX_SOURCES') ? '400' : '');
+      }
+      input.placeholder = key.setting
+        ? envVar.endsWith('_MAX_SOURCES')
+          ? 'camera limit'
+          : ''
+        : key.set
         ? t('{envVar} saved — paste to replace', { envVar })
         : t('paste {envVar}', { envVar });
       fields.append(input);
@@ -573,7 +587,12 @@ export async function initKeySetup({
     const updates = collectKeyUpdates(
       inputs.map((input) => ({
         envVar: input.dataset.envVar,
-        value: input.value,
+        value:
+          input.dataset.settingToggle === 'true'
+            ? input.checked
+              ? '1'
+              : '0'
+            : input.value,
       })),
     );
     if (!Object.keys(updates).length) {
