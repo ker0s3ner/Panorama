@@ -106,6 +106,7 @@ export function installTrackpadPinchZoom(
 /** Cesium.Viewer options of the standard globe viewer. */
 export function applicationViewerOptions(creditContainer) {
   return {
+    sceneMode: Cesium.SceneMode.SCENE2D,
     timeline: false,
     animation: false,
     baseLayerPicker: false,
@@ -118,8 +119,6 @@ export function applicationViewerOptions(creditContainer) {
     selectionIndicator: false,
     infoBox: false,
     baseLayer: false,
-    // Replaces the blocky Tycho-2 default. An option, not `skyBox: false`,
-    // which would also stop CesiumWidget from creating the Sun and Moon.
     skyBox: new StarrySky(),
     creditContainer,
     msaaSamples: 4,
@@ -146,11 +145,8 @@ export function createApplicationViewer({ container, creditContainer }) {
     // atmosphere fails to LINK on Apple's Metal backend and kills the
     // render loop. See app/atmosphereCompat.js.
     applyModelAtmosphereWorkaround(viewer.scene);
-    viewer.scene.globe.show = false;
-    viewer.scene.skyAtmosphere.show = true;
-    viewer.scene.skyAtmosphere.atmosphereLightIntensity = 18;
-    viewer.scene.skyAtmosphere.saturationShift = -0.12;
-    viewer.scene.skyAtmosphere.brightnessShift = -0.08;
+    viewer.scene.globe.show = true;
+    viewer.scene.skyAtmosphere.show = false;
     return viewer;
   } catch (error) {
     viewer.destroy();

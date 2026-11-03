@@ -221,13 +221,13 @@ test('the separate viewer export imports without constructing a browser viewer',
   assert.throws(() => createApplicationViewer({}), /containers are required/);
 });
 
-test('the viewer gets the starry sky as an option, which keeps the Sun and Moon', async () => {
+test('the 2D viewer keeps the starry sky option available', async () => {
   const { applicationViewerOptions } = await import('./viewer.js');
   const { StarrySky } = await import('../sky/starrySky.js');
   const creditContainer = {};
   const options = applicationViewerOptions(creditContainer);
-  // CesiumWidget skips scene.sun and scene.moon when skyBox is false.
   assert.ok(options.skyBox instanceof StarrySky);
+  assert.equal(options.sceneMode, 2);
   assert.equal(options.creditContainer, creditContainer);
   options.skyBox.destroy();
 });
