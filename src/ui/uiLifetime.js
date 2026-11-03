@@ -20,15 +20,6 @@ export class UiLifetime {
     this.removers.add(remove);
     return remove;
   }
-  /** Run `remove` at teardown, or now when already torn down. */
-  own(remove) {
-    if (this.destroyed) {
-      remove();
-      return remove;
-    }
-    this.removers.add(remove);
-    return remove;
-  }
   frame(callback) {
     if (this.destroyed) return null;
     const frame = requestAnimationFrame((time) => {

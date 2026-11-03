@@ -1,8 +1,6 @@
 import {
-  EMPTY_CCTV_FRAME,
   _clearCctvFrame,
   _queueCctvFrame,
-  _setCctvFrame,
   _settleCctvFrame,
   _syncCctvSourceBadge,
 } from './cctvFrames.js';
@@ -10,37 +8,20 @@ import {
   _activeCctvCameraId,
   _resetCctvCalibration,
   _beginCctvCalValueEdit,
+  _syncCctvCalReadout,
 } from './cctvCalibration.js';
 import {
   _calBadgeLabel,
   _renderCctvState,
-  _publishCctvChip,
   _typeCctvSummary,
   _updateCctvSyncChip,
 } from './cctvPresentation.js';
 import { _initCctvPanel } from './cctvBindings.js';
-import { useCctvStore } from './stores/cctv.js';
-import { useStatusStore } from './stores/status.js';
-import { applicationPinia } from './vueRuntime.js';
-import { onLocaleChange } from '../i18n/index.js';
 
-/**
- * Own camera-panel interaction and presentation; receive the camera port and
- * application actions. The panel view renders the buttons, CAL chip and meta
- * line from what this publishes (`gev-cctv` store), and the scene chrome the
- * camera grid chip (`gev-status` store).
- */
+/** Own camera-panel interaction and presentation; receive the camera port and application actions. */
 export class CctvControls {
-  constructor({
-    elements,
-    cctv,
-    actions,
-    store = useCctvStore(applicationPinia()),
-    statusStore = useStatusStore(applicationPinia()),
-  }) {
+  constructor({ elements, cctv, actions }) {
     Object.assign(this, elements);
-    this.store = store;
-    this.statusStore = statusStore;
     this.cctv = cctv;
     this.actions = actions;
     this.destroyed = false;
@@ -52,22 +33,11 @@ export class CctvControls {
     this._lastSeenCctvActiveId = null;
     this._cctvChipHideTimer = null;
     this._cctvChipWasBusy = false;
-    // The camera grid chip as last published; its label stays while hidden.
-    this._cctvChip = null;
     this._cctvFrameRequestToken = 0;
     this._cctvFramePreloader = null;
-    this._frame = EMPTY_CCTV_FRAME;
     this._calibrationEdit = null;
     this._actionGeneration = 0;
     this._initCctvPanel();
-    // The panel and the grid chip hold translated text; show it again in a
-    // new locale, from a fresh layer state when there is one (its summary is
-    // worded by the layer).
-    this._offLocale = onLocaleChange(() => {
-      const state = this.cctv?.getUIState?.() ?? this._cctvState;
-      if (state) this._renderCctvState(state);
-      if (this._cctvChip) this._publishCctvChip({});
-    });
     if (this._cctvVideo && typeof MutationObserver !== 'undefined') {
       this._videoVisibilityObserver = new MutationObserver(() =>
         this._renderCctvState(this._cctvState),
@@ -103,9 +73,6 @@ export class CctvControls {
   _clearCctvFrame(...args) {
     return _clearCctvFrame.call(this, ...args);
   }
-  _setCctvFrame(...args) {
-    return _setCctvFrame.call(this, ...args);
-  }
   _queueCctvFrame(...args) {
     return _queueCctvFrame.call(this, ...args);
   }
@@ -124,6 +91,9 @@ export class CctvControls {
   _beginCctvCalValueEdit(...args) {
     return _beginCctvCalValueEdit.call(this, ...args);
   }
+  _syncCctvCalReadout(...args) {
+    return _syncCctvCalReadout.call(this, ...args);
+  }
   _calBadgeLabel(...args) {
     return _calBadgeLabel.call(this, ...args);
   }
@@ -132,9 +102,6 @@ export class CctvControls {
   }
   _typeCctvSummary(...args) {
     return _typeCctvSummary.call(this, ...args);
-  }
-  _publishCctvChip(...args) {
-    return _publishCctvChip.call(this, ...args);
   }
   _updateCctvSyncChip(...args) {
     return _updateCctvSyncChip.call(this, ...args);
@@ -145,7 +112,6 @@ export class CctvControls {
   destroy() {
     if (this.destroyed) return;
     this.destroyed = true;
-    this._offLocale();
     this._cctvVideoSurface?.stop();
     this._videoVisibilityObserver?.disconnect();
     this._actionGeneration++;
@@ -158,6 +124,6 @@ export class CctvControls {
     clearTimeout(this._cctvChipHideTimer);
     this._cctvSummaryTypingTimer = null;
     this._cctvChipHideTimer = null;
-    this._publishCctvChip({ visible: false, stopped: true });
+    this._cctvSyncChip?.classList.remove('visible');
   }
 }

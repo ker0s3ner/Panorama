@@ -9,6 +9,14 @@ export class ShellFacade {
     return this._navigation.subscribeCameraHandoff(listener);
   }
 
+  get _models3dModeBtns() {
+    return this._aircraftDisplay._models3dModeBtns;
+  }
+
+  set _models3dModeBtns(value) {
+    this._aircraftDisplay._models3dModeBtns = value;
+  }
+
   get _models3dEnabled() {
     return this._aircraftDisplay._models3dEnabled;
   }
@@ -129,6 +137,14 @@ export class ShellFacade {
     this._displayBindings._frameRateMonitor = value;
   }
 
+  get _displayControls() {
+    return this._displayBindings?._displayControls;
+  }
+
+  set _displayControls(value) {
+    this._displayBindings._displayControls = value;
+  }
+
   get _activeLocationId() {
     return this._locationNavigation._activeLocationId;
   }
@@ -231,6 +247,14 @@ export class ShellFacade {
 
   set orbitController(value) {
     this._locationNavigation.orbitController = value;
+  }
+
+  get _orbitIndicator() {
+    return this._locationNavigation._orbitIndicator;
+  }
+
+  set _orbitIndicator(value) {
+    this._locationNavigation._orbitIndicator = value;
   }
 
   get cockpitView() {
@@ -405,12 +429,28 @@ export class ShellFacade {
     this._visualSettings._contactsDetectionRestore = value;
   }
 
+  get _detectionAllocationBtns() {
+    return this._visualSettings._detectionAllocationBtns;
+  }
+
+  set _detectionAllocationBtns(value) {
+    this._visualSettings._detectionAllocationBtns = value;
+  }
+
   get _detectionAllocationPreference() {
     return this._visualSettings._detectionAllocationPreference;
   }
 
   set _detectionAllocationPreference(value) {
     this._visualSettings._detectionAllocationPreference = value;
+  }
+
+  get _styleParameters() {
+    return this._visualSettings._styleParameters;
+  }
+
+  set _styleParameters(value) {
+    this._visualSettings._styleParameters = value;
   }
 
   get _irBoostActive() {
@@ -510,7 +550,7 @@ export class ShellFacade {
   }
 
   /** Settle only the search generation that still owns the shared input UI. */
-  _settleLocationSearchUi(generation, options) {
+  _settleLocationSearchUi(generation) {
     return this._navigation._settleLocationSearchUi(...arguments);
   }
 
@@ -534,6 +574,16 @@ export class ShellFacade {
    */
   _connectDirectionsCamera(...args) {
     return this._layerBindings._connectDirectionsCamera(...args);
+  }
+
+  /**
+   * On window resize, keep the draggable panel on-screen — a panel positioned near an edge can fall
+   * outside a now-smaller viewport (audit U2). pp-toggles is right-pinned, so re-pin (horizontal) and
+   * clamp its top. No-op until the panel has been positioned (explicit inline top).
+   * @returns {void}
+   */
+  _reclampDraggablePanels() {
+    return this._panelPosition._reclampDraggablePanels();
   }
 
   /**
@@ -657,13 +707,13 @@ export class ShellFacade {
   }
 
   /**
-   * Sets the sharpen amount the Display slider shows and applies it.
-   * @param {number} pct - Sharpen intensity, 0 to 100.
-   * @param {{syncShare?: boolean}} [options]
+   * Maps a normalized sharpen value (0-1) to the unsharp-mask `amount` uniform.
+   * Range: 0.1 (subtle) to 2.1 (aggressive edge enhancement).
+   * @param {number} val - Normalized sharpen intensity (0.0 to 1.0).
    * @returns {void}
    */
-  _setSharpenIntensity(pct, { syncShare = true } = {}) {
-    return this._visualSettings._setSharpenIntensity(...arguments);
+  _applySharpenIntensity(val) {
+    return this._visualSettings._applySharpenIntensity(...arguments);
   }
 
   /**
@@ -676,24 +726,17 @@ export class ShellFacade {
   }
 
   /**
-   * Sets the five-stop density control, canonicalized; the engine derives
-   * Sparse/Balanced/Dense from the same stop. Without a value it reapplies
-   * the current stop.
-   * @param {number} [pct]
+   * Reads and canonicalizes the five-stop density control. The engine derives
+   * Sparse/Balanced/Dense from the same stop.
    * @returns {void}
    */
-  _setDetectionDensity(pct) {
-    return this._visualSettings._setDetectionDensity(...arguments);
+  _applyDetectionDensityFromUi() {
+    return this._visualSettings._applyDetectionDensityFromUi(...arguments);
   }
 
-  /**
-   * Sets the keyhole fade distance and outside opacity, in percent; either
-   * one left out keeps its current value.
-   * @param {{fadePct?: number, outsideOpacityPct?: number}} [tuning]
-   * @returns {void}
-   */
-  _setDetectionFade(tuning) {
-    return this._visualSettings._setDetectionFade(...arguments);
+  /** Apply responsive keyhole fade controls from normalized UI percentages. */
+  _applyDetectionFadeFromUi() {
+    return this._visualSettings._applyDetectionFadeFromUi(...arguments);
   }
 
   _syncDetectionUiFromEngine() {
@@ -833,6 +876,15 @@ export class ShellFacade {
   }
 
   /**
+   * Allows either command-dock tray to remain open until explicitly unpinned.
+   * Both trays may be pinned; transient and error trays stack above them.
+   * @returns {void}
+   */
+  _initCommandDockPins() {
+    return this._panelChrome._initCommandDockPins(...arguments);
+  }
+
+  /**
    * Tracks the live pinned-tray height so a hovered sibling can stack above it
    * without hardcoded content dimensions.
    * @returns {void}
@@ -857,6 +909,15 @@ export class ShellFacade {
    */
   _maybeNotifyLayoutReset() {
     return this._panelChrome._maybeNotifyLayoutReset(...arguments);
+  }
+
+  /**
+   * Sets up drag-to-reposition for legacy floating controls. The right rail
+   * and left accordion remain fixed so their HUD alignment is deterministic.
+   * @returns {void}
+   */
+  _initPanelDrag() {
+    return this._panelPosition._initPanelDrag();
   }
 
   _persistAwarenessSelection(...args) {
@@ -907,12 +968,25 @@ export class ShellFacade {
     return this._radioControls?._setCockpitDisclosure?.(...args);
   }
 
-  _cockpitDisclosureOpen(kind) {
-    return Boolean(this._radioControls?._cockpitDisclosureOpen?.(kind));
+  _setRadioDisclosure(...args) {
+    return this._radioControls?._setRadioDisclosure?.(...args);
+  }
+
+  _syncContextRadioLauncherState(...args) {
+    return this._radioControls?._syncContextRadioLauncherState?.(...args);
   }
 
   _renderRadioState(...args) {
     return this._radioControls?._renderRadioState?.(...args);
+  }
+
+  /**
+   * Returns the versioned localStorage key for a panel's saved position.
+   * @param {string} panelId - DOM id of the panel.
+   * @returns {string} localStorage key.
+   */
+  _panelStorageKey(panelId) {
+    return this._panelPosition._panelStorageKey(panelId);
   }
 
   /**
@@ -1000,14 +1074,71 @@ export class ShellFacade {
   }
 
   /**
-   * Presents a panel's state, merged over what it shows now; its root and
-   * buttons draw it from the panel chrome store.
-   * @param {HTMLElement|string} panelOrId - The panel or its id.
-   * @param {object} [patch] - The state that changes.
+   * Updates collapse button glyphs based on panel state. Right-rail panels
+   * use directional arrows; left-stack panels use +/- symbols.
+   * @param {HTMLElement} panelEl - The panel DOM element.
    * @returns {void}
    */
-  _presentPanel(panelOrId, patch) {
-    return this._panelChrome._presentPanel(...arguments);
+  _syncPanelCollapseButton(panelEl) {
+    return this._panelChrome._syncPanelCollapseButton(...arguments);
+  }
+
+  /**
+   * Converts a panel from left-positioned to right-anchored so it expands
+   * leftward on resize. Used for the right-rail parameter panel.
+   * @param {HTMLElement} panelEl - The panel to re-anchor.
+   * @returns {void}
+   */
+  _pinPanelToRight(panelEl) {
+    return this._panelPosition._pinPanelToRight(panelEl);
+  }
+
+  /**
+   * Restores a panel's top/left position from localStorage.
+   * Right-rail panels are additionally pinned to the right edge.
+   * @param {string} panelId - DOM id of the panel.
+   * @param {HTMLElement} panelEl - The panel DOM element.
+   * @returns {void}
+   */
+  _restorePanelPosition(panelId, panelEl) {
+    return this._panelPosition._restorePanelPosition(panelId, panelEl);
+  }
+
+  /**
+   * Clamp a desired left/top so the panel stays fully on-screen (6px inset), matching the drag
+   * clamp (ui.js ~1822). Width/height are position-independent, so reading the rect first is safe.
+   * @param {number} left - desired left (px)
+   * @param {number} top - desired top (px)
+   * @param {HTMLElement} panelEl - the panel element
+   * @returns {{left:number, top:number}}
+   */
+  _clampToViewport(left, top, panelEl) {
+    return this._panelPosition._clampToViewport(left, top, panelEl);
+  }
+
+  /**
+   * Persists a panel's current bounding-rect position to localStorage.
+   * @param {string} panelId - DOM id of the panel.
+   * @param {HTMLElement} panelEl - The panel DOM element.
+   * @returns {void}
+   */
+  _savePanelPosition(panelId, panelEl) {
+    return this._panelPosition._savePanelPosition(panelId, panelEl);
+  }
+
+  /**
+   * Promotes a panel to the top of the panel z band [PANEL_Z_BASE, PANEL_Z_MAX].
+   * Renormalizes all promoted panels when the band is exhausted so panels can
+   * never climb above the voice pill (150), toasts (200), or clean-view exit (300).
+   * @param {HTMLElement} panelEl - Panel to bring to front.
+   * @returns {void}
+   */
+  _promotePanelZ(panelEl) {
+    return this._panelPosition._promotePanelZ(panelEl);
+  }
+
+  _makePanelDraggable(panelId, panelEl, handleEl) {
+    return this._panelPosition._makePanelDraggable(panelId, panelEl, handleEl);
   }
 
   _buildSharePanelState() {
@@ -1268,8 +1399,8 @@ export class ShellFacade {
    * @param {string} [styleName=this.activeStyle] - Style name to display.
    * @returns {void}
    */
-  _publishActiveStyle(styleName = this.activeStyle) {
-    return this._visualSettings._publishActiveStyle(...arguments);
+  _updateStyleMiniStatus(styleName = this.activeStyle) {
+    return this._visualSettings._updateStyleMiniStatus(...arguments);
   }
 
   _initOrbit(...args) {

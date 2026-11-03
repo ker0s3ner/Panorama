@@ -25,7 +25,7 @@
   inset: -18px;
   background: radial-gradient(
     ellipse at center,
-    rgba(0, 212, 255, 0.16) 0%,
+    rgba(76, 144, 240, 0.16) 0%,
     transparent 65%
   );
   filter: blur(16px);
@@ -46,6 +46,8 @@
   max-height: calc(var(--right-stack-max-height, 50svh) - 64px);
   overflow-y: auto;
   overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(76, 144, 240, 0.46) transparent;
 }
 #recent-imagery-panel.collapsed #recent-imagery-panel-body,
 #recent-imagery-panel.collapsed #recent-imagery-panel-count,
@@ -53,6 +55,10 @@
 #recent-imagery-panel [hidden],
 #recent-imagery-split-line[hidden] {
   display: none !important;
+}
+#recent-imagery-panel.collapsed .panel-title {
+  font-size: 8px;
+  letter-spacing: 1.8px;
 }
 #recent-imagery-panel.collapsed .panel-header {
   margin-bottom: 2px;
@@ -63,7 +69,7 @@
 
 /* ---- the fixed stack ---------------------------------------------------- */
 .recent-imagery-readout {
-  --weather-card-border: rgba(98, 181, 255, 0.28);
+  --weather-card-border: rgba(76, 144, 240, 0.28);
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -166,6 +172,7 @@
   overflow-x: auto;
   overflow-y: hidden;
   scroll-snap-type: x proximity;
+  scrollbar-width: thin;
   outline: none;
   border-radius: 6px;
 }
@@ -209,10 +216,10 @@
   background: var(--accent-dim);
 }
 .recent-imagery-readout .ri-card.preview {
-  box-shadow: inset 0 0 0 1px rgba(139, 233, 255, 0.35);
+  box-shadow: inset 0 0 0 1px rgba(76, 144, 240, 0.35);
 }
 .recent-imagery-readout .ri-card.pinned {
-  box-shadow: inset 0 0 0 1px rgba(139, 233, 255, 0.75);
+  box-shadow: inset 0 0 0 1px rgba(76, 144, 240, 0.75);
 }
 .recent-imagery-readout .ri-thumb {
   position: relative;
@@ -241,7 +248,7 @@
   position: absolute;
   padding: 0 4px;
   border-radius: 3px;
-  background: rgba(4, 17, 27, 0.9);
+  background: rgba(18, 22, 27, 0.9);
   font-size: 7px;
   font-weight: 700;
   line-height: 12px;
@@ -302,10 +309,10 @@ html:not([lang='en'])
   display: none;
 }
 
-/* 4. The selection bar: 24px mode buttons plus borders, then two stable rows. */
+/* 4. The selection bar: mode, then two rows that are always there. */
 .recent-imagery-readout .ri-selection {
   display: grid;
-  grid-template-rows: 26px 20px 20px;
+  grid-template-rows: 20px 20px 20px;
   row-gap: 4px;
   padding: 5px;
   border: 1px solid var(--weather-card-border);
@@ -314,6 +321,7 @@ html:not([lang='en'])
 .recent-imagery-readout .ri-mode {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
 }
 .recent-imagery-readout .ri-selection .data-toggle-chip {
   height: 20px;
@@ -415,6 +423,16 @@ html:not([lang='en']) .recent-imagery-readout .ri-opacity-label {
 }
 .recent-imagery-readout .ri-opacity-value {
   font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+}
+.recent-imagery-readout .ri-opacity {
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  accent-color: var(--accent);
+}
+.recent-imagery-readout .ri-opacity:disabled {
+  opacity: 0.35;
 }
 .recent-imagery-readout .ri-swap {
   width: 40px;
@@ -465,15 +483,15 @@ body.gev-imagery-box .cesium-widget canvas {
   z-index: 130;
   width: 1px;
   pointer-events: none;
-  background: rgba(218, 241, 247, 0.76);
-  box-shadow: 0 0 12px rgba(94, 216, 239, 0.72);
+  background: rgba(229, 232, 235, 0.76);
+  box-shadow: 0 0 12px rgba(76, 144, 240, 0.72);
 }
 #recent-imagery-split-line span {
   position: absolute;
   top: 14px;
   padding: 2px 6px;
   border-radius: 3px;
-  background: rgba(4, 17, 27, 0.82);
+  background: rgba(18, 22, 27, 0.82);
   color: rgba(239, 247, 249, 0.92);
   font: 700 9px/1.4 var(--font-mono);
   letter-spacing: 1.2px;
@@ -497,10 +515,10 @@ body.gev-imagery-box .cesium-widget canvas {
   border-radius: 50%;
   outline: 0;
   color: rgba(239, 247, 249, 0.96);
-  background: rgba(4, 17, 27, 0.96);
+  background: rgba(18, 22, 27, 0.96);
   box-shadow:
     0 0 0 5px rgba(62, 112, 125, 0.3),
-    0 0 13px rgba(94, 216, 239, 0.3);
+    0 0 13px rgba(76, 144, 240, 0.3);
   font: 700 14px/1 var(--font-mono);
   transform: translate(-50%, -50%);
   pointer-events: auto;

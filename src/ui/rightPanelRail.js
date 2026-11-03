@@ -2,10 +2,13 @@ import {
   allocatePanelStackHeights,
   panelStackAutoCollapseIndices,
 } from '../panelStackLayout.js';
-import { resolveHudRailLayout } from './panelRailGeometry.js';
+import {
+  resolveHudRailLayout,
+  shouldHideCollapsedRightPanels,
+} from './panelRailGeometry.js';
 
 import { displayPanelScroller } from './displayPanelScroll.js';
-import { settleSideAccordion } from './panelAccordion.js';
+import { CONSOLE_CHROME_TOP_PX } from './leftPanelRail.js';
 
 const pendingCollapseRetries = new WeakSet();
 
@@ -41,8 +44,7 @@ function settledLeftRailTop(leftStack, viewportHeight, getComputedStyle) {
  * @param {Window} options.windowRef Viewport and style reader.
  * @param {{visible: boolean, variant: string}} options.hud Current HUD presentation.
  * @param {string} options.preferredPanelId Most recently opened panel.
- * @param {Function} options.onCollapse Present a panel's collapse:
- *   `(panel, {collapsed, auto})`.
+ * @param {Function} options.onCollapse Update a panel's disclosure chrome.
  * @param {Function} options.onRetry Request another pass after automatic collapse.
  * @param {Function} [options.getComputedStyle] Optional DOM style reader override.
  * @param {HTMLElement} options.leftStack Rail supplying the shared top baseline.
@@ -68,15 +70,15 @@ export function layoutRightPanelRail({
   // A collapse may schedule one follow-up, which only measures and allocates.
   const isCollapseRetry = pendingCollapseRetries.delete(stack);
 
-  // Other CSS may hide a panel, such as an event view: it is not laid out.
-  // Exclusive presentation hides collapsed panels itself; those stay in the
-  // rail so they can be restored.
+  // A floating (lifted-out) panel is not laid out by the rail. Neither is one
+  // that other CSS hides, such as an event view. Exclusive presentation hides
+  // collapsed panels itself; those stay in the rail so they can be restored.
   const hiddenByRail = (panel) =>
     stack.classList.contains('layout-exclusive') &&
     panel.classList.contains('collapsed');
   const panels = [...stack.children].filter(
     (panel) =>
-      panel.matches('[data-panel-id]') &&
+      panel.matches('[data-panel-id]:not(.panel-floating)') &&
       !panel.hidden &&
       (hiddenByRail(panel) || getComputedStyle(panel).display !== 'none'),
   );
@@ -84,23 +86,42 @@ export function layoutRightPanelRail({
     for (const panel of panels.filter((item) =>
       item.classList.contains('layout-auto-collapsed'),
     )) {
-      onCollapse(panel, { collapsed: false, auto: null });
+      panel.classList.remove('collapsed', 'layout-auto-collapsed');
+      onCollapse(panel);
     }
   }
-  // One panel is open per desktop side; this marker is distinct from
-  // Tactical's space-based collapse.
+  // Normalize restored state and theme entry without overwriting saved panel
+  // preferences. This marker is distinct from Tactical's space-based collapse.
+  if (hud.variant === 'cyber') {
+    const expanded = panels.filter(
+      (panel) => !panel.classList.contains('collapsed'),
+    );
+    const owner =
+      expanded.find((panel) => panel.id === preferredPanelId) ||
+      expanded.find((panel) => panel.contains(documentRef?.activeElement)) ||
+      expanded[0];
+    for (const panel of expanded) {
+      if (panel === owner) continue;
+      panel.classList.add('collapsed', 'cyber-accordion-collapsed');
+      onCollapse(panel);
+    }
+  } else {
+    for (const panel of panels) {
+      if (!panel.classList.contains('cyber-accordion-collapsed')) continue;
+      panel.classList.remove('collapsed', 'cyber-accordion-collapsed');
+      onCollapse(panel);
+    }
+  }
   const isMobile = windowRef.matchMedia('(max-width: 720px)').matches;
-  settleSideAccordion({
-    panels,
-    enabled: !isMobile,
-    preferredPanelId,
-    documentRef,
-    onCollapse,
+  const hasExpandedPanel = panels.some(
+    (panel) =>
+      !panel.classList.contains('collapsed') &&
+      (!isMobile || panel.id !== 'pp-toggles'),
+  );
+  const exclusive = shouldHideCollapsedRightPanels({
+    hudVariant: hud.variant,
+    hasExpandedPanel,
   });
-  // The desktop panel rail lists every panel, so collapsed ones are hidden.
-  // Phones present the rail as tab sheets (mobileShell.js), which choose what
-  // shows; hiding collapsed siblings would empty a sheet and its a11y tree.
-  const exclusive = !isMobile;
   stack.classList.toggle('layout-exclusive', exclusive);
   for (const panel of panels) {
     if (exclusive && panel.classList.contains('collapsed'))
@@ -126,12 +147,9 @@ export function layoutRightPanelRail({
     viewportHeight,
     getComputedStyle,
   );
-  // Align with the left rail's buttons, which hold still while its stack moves.
-  const leftRailOffset =
-    parseFloat(leftStack?.style.getPropertyValue('--panel-rail-offset')) || 0;
   const alignedTop = Number.isFinite(leftStackTop)
-    ? leftStackTop + leftRailOffset
-    : viewportHeight * 0.26;
+    ? leftStackTop
+    : CONSOLE_CHROME_TOP_PX;
   const obstacleRects = [];
 
   for (const obstacle of obstacles) {
@@ -278,7 +296,8 @@ export function layoutRightPanelRail({
   if (!isCollapseRetry && autoCollapseIndices.length) {
     for (const index of autoCollapseIndices) {
       const panel = expandedPanels[index];
-      onCollapse(panel, { collapsed: true, auto: 'layout' });
+      panel.classList.add('collapsed', 'layout-auto-collapsed');
+      onCollapse(panel);
     }
     pendingCollapseRetries.add(stack);
     onRetry();

@@ -11,8 +11,8 @@ import {
   resolveVoiceVisualizerSpeaker,
   resolveVoiceControlHint,
   gateVoiceVisualizerLevel,
+  resetVoiceVisualizerBars,
 } from './realtimeInputPolicy.js';
-import { VOICE_VISUALIZER_BARS } from './control.js';
 import { shouldPauseRadioForVoice } from './realtimeProtocol.js';
 
 /** Own physical push-to-talk gestures, microphone controls and audio meters. */
@@ -116,7 +116,7 @@ export class RealtimeInput {
           // off if it is talking. Short taps never reach this point.
           if (mayInterrupt) this.bargeIn?.();
           this.beginPointerTurn?.('keydown');
-          this.ui.update('root', { pushToTalk: 'held' });
+          this.ui.root.dataset.pushToTalk = 'held';
           this.setMicrophoneEnabled(true);
           if (this.status === 'listening')
             this.setStatus('listening', t('Release Space to send'));
@@ -124,8 +124,7 @@ export class RealtimeInput {
           this.start({ pushToTalk: true });
           // start() performs a controlled stop() before connecting. Restore the
           // marker it clears so the UI reflects this still-held gesture.
-          if (this.pushToTalkKeyHeld)
-            this.ui.update('root', { pushToTalk: 'held' });
+          if (this.pushToTalkKeyHeld) this.ui.root.dataset.pushToTalk = 'held';
         }
       }, PUSH_TO_TALK_HOLD_DELAY_MS);
     };
@@ -192,7 +191,7 @@ export class RealtimeInput {
     this.releasePointerHold?.();
     if (!this.pushToTalkKeyHeld) return;
     this.pushToTalkKeyHeld = false;
-    this.ui.update('root', { pushToTalk: null });
+    delete this.ui.root.dataset.pushToTalk;
     if (!this.pushToTalkMode) return;
     this.setMicrophoneEnabled(false);
     if (this.status === 'listening')
@@ -206,7 +205,8 @@ export class RealtimeInput {
    * @returns {void}
    */
   setMicrophoneEnabled(enabled) {
-    this.ui?.update('root', { microphone: enabled ? 'active' : 'muted' });
+    if (this.ui?.root)
+      this.ui.root.dataset.microphone = enabled ? 'active' : 'muted';
     this.stream?.getAudioTracks?.().forEach((track) => {
       track.enabled = Boolean(enabled);
     });
@@ -220,7 +220,10 @@ export class RealtimeInput {
   startVoiceVisualizer(stream) {
     this.stopVoiceVisualizer();
     const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-    if (!AudioContextClass || !stream || !this.ui) return;
+    const bars = Array.from(
+      this.ui.root.querySelectorAll('.gev-voice-visualizer span'),
+    );
+    if (!AudioContextClass || !stream || !bars.length) return;
     try {
       const context = new AudioContextClass();
       this.visualizerAudioContext = context;
@@ -249,18 +252,17 @@ export class RealtimeInput {
           },
         );
         if (!signal) {
-          this.restVoiceVisualizer();
+          resetVoiceVisualizerBars(bars);
           this.visualizerFrame = requestAnimationFrame(render);
           return;
         }
         signal.analyser.getByteFrequencyData(signal.data);
         const binCount = signal.data.length;
-        const count = VOICE_VISUALIZER_BARS;
-        const bars = Array.from({ length: count }, (_, index) => {
-          const start = Math.floor((index / count) * binCount);
+        bars.forEach((bar, index) => {
+          const start = Math.floor((index / bars.length) * binCount);
           const end = Math.max(
             start + 1,
-            Math.floor(((index + 1) / count) * binCount),
+            Math.floor(((index + 1) / bars.length) * binCount),
           );
           let energy = 0;
           for (let bin = start; bin < end; bin++) energy += signal.data[bin];
@@ -273,12 +275,15 @@ export class RealtimeInput {
             gateVoiceVisualizerLevel(normalized, gate),
             0.72,
           );
-          return {
-            level: `${Math.round(5 + shaped * 29)}px`,
-            opacity: `${(0.5 + shaped * 0.5).toFixed(2)}`,
-          };
+          bar.style.setProperty(
+            '--audio-level',
+            `${Math.round(5 + shaped * 29)}px`,
+          );
+          bar.style.setProperty(
+            '--audio-opacity',
+            `${(0.5 + shaped * 0.5).toFixed(2)}`,
+          );
         });
-        this.ui?.setBars(bars);
         this.visualizerFrame = requestAnimationFrame(render);
       };
       render();
@@ -348,12 +353,9 @@ export class RealtimeInput {
       this.visualizerAudioContext.close().catch(() => {});
       this.visualizerAudioContext = null;
     }
-    this.restVoiceVisualizer();
-  }
-
-  /** Return the waveform to its CSS standby baseline. */
-  restVoiceVisualizer() {
-    this.ui?.setBars(null);
+    resetVoiceVisualizerBars(
+      this.ui?.root?.querySelectorAll('.gev-voice-visualizer span'),
+    );
   }
 
   /**
@@ -361,13 +363,15 @@ export class RealtimeInput {
    * @returns {void}
    */
   updateVoiceButtonLabel() {
-    if (!this.ui) return;
+    if (!this.ui.buttonLabel) return;
     // The mic button's caption; the first-run tip names it the same way.
-    this.ui.update('mic', { text: () => t('MIC') });
-    const { pushToTalkMode, pushToTalkKeyHeld } = this;
-    this.ui.update('help', {
-      text: () => resolveVoiceControlHint(pushToTalkMode, pushToTalkKeyHeld),
-    });
+    this.ui.buttonLabel.textContent = t('MIC');
+    if (this.ui.helpDetail) {
+      this.ui.helpDetail.textContent = resolveVoiceControlHint(
+        this.pushToTalkMode,
+        this.pushToTalkKeyHeld,
+      );
+    }
   }
 
   setVoiceSpeaker(speaker, { keepVisualizerSpeaker = false } = {}) {
@@ -378,7 +382,7 @@ export class RealtimeInput {
       nextSpeaker,
       keepVisualizerSpeaker,
     );
-    this.ui.update('root', { speaker: nextSpeaker });
+    this.ui.root.dataset.speaker = nextSpeaker;
     if (shouldPauseRadioForVoice({ speaker: nextSpeaker }))
       this.pauseRadioForVoice();
   }
@@ -388,7 +392,10 @@ export class RealtimeInput {
     this.pushToTalkKeyHeld = false;
     this.spaceKeyHeld = false;
     this.resetPushToTalkGesture();
-    this.ui?.update('root', { pushToTalk: null, microphone: null });
+    if (this.ui?.root) {
+      delete this.ui.root.dataset.pushToTalk;
+      delete this.ui.root.dataset.microphone;
+    }
   }
 
   detachBindings() {

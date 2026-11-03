@@ -1,19 +1,25 @@
 import { t, msg } from '../i18n/index.js';
 import {
-  showRadioEnableBusy,
-  showRadioTuner,
-  showRadioVolume,
-} from './radioPresentation.js';
-import {
   radioTunerSlot,
   radioTunerCommitSlot,
   radioTunerPointerPosition,
+  buildRadioTunerTicks,
 } from './radioTunerModel.js';
 
 /** Bind Radio input using a RadioControls receiver and supplied actions. */
 export function bindRadioControls() {
   if (!this._radioPanel) return;
   const tunerListenerOptions = {};
+  const setRadioDisclosure = (expanded, { returnFocus = false } = {}) => {
+    if (this.destroyed) return;
+    const open = Boolean(expanded);
+    this._contextRadioDock?.classList.toggle('disclosure-open', open);
+    if (this._contextRadioMini) this._contextRadioMini.hidden = !open;
+    this._syncContextRadioLauncherState();
+    if (!open && returnFocus)
+      this._contextRadioToggleBtn?.focus({ preventScroll: true });
+  };
+  this._setRadioDisclosure = setRadioDisclosure;
   const setCockpitDisclosure = (
     kind,
     expanded,
@@ -23,9 +29,56 @@ export function bindRadioControls() {
     const displayOpen = kind === 'display' && Boolean(expanded);
     const radioOpen = kind === 'radio' && Boolean(expanded);
     if (displayOpen || radioOpen) this.actions.setSignalCollapsed(true);
-    this._cockpitDisclosure = { display: displayOpen, radio: radioOpen };
-    this.store?.publishUtility({ ...this._cockpitDisclosure });
+    if (this._cockpitDisplayPanel)
+      this._cockpitDisplayPanel.hidden = !displayOpen;
+    if (this._cockpitRadioPanel) this._cockpitRadioPanel.hidden = !radioOpen;
+    this._cockpitDisplayToggleBtn
+      ?.closest('.cockpit-utility-control')
+      ?.classList.toggle('is-expanded', displayOpen);
+    this._cockpitRadioToggleBtn
+      ?.closest('.cockpit-utility-control')
+      ?.classList.toggle('is-expanded', radioOpen);
+    this._cockpitDisplayToggleBtn?.setAttribute(
+      'aria-expanded',
+      String(displayOpen),
+    );
+    this._cockpitRadioToggleBtn?.setAttribute(
+      'aria-expanded',
+      String(radioOpen),
+    );
     if (displayOpen) this.actions.revealStyleParameters();
+    if (this._cockpitDisplayToggleBtn) {
+      this._cockpitDisplayToggleBtn.textContent = displayOpen ? '▶' : '◀';
+      this._cockpitDisplayToggleBtn.setAttribute(
+        'aria-label',
+        t(
+          displayOpen
+            ? msg('Collapse Cockpit display options')
+            : msg('Expand Cockpit display options'),
+        ),
+      );
+      this._cockpitDisplayToggleBtn.title = t(
+        displayOpen
+          ? msg('Collapse Cockpit display options')
+          : msg('Expand Cockpit display options'),
+      );
+    }
+    if (this._cockpitRadioToggleBtn) {
+      this._cockpitRadioToggleBtn.textContent = radioOpen ? '▶' : '◀';
+      this._cockpitRadioToggleBtn.setAttribute(
+        'aria-label',
+        t(
+          radioOpen
+            ? msg('Collapse Cockpit Radio controls')
+            : msg('Expand Cockpit Radio controls'),
+        ),
+      );
+      this._cockpitRadioToggleBtn.title = t(
+        radioOpen
+          ? msg('Collapse Cockpit Radio controls')
+          : msg('Expand Cockpit Radio controls'),
+      );
+    }
     if (!expanded && returnFocus) {
       (kind === 'display'
         ? this._cockpitDisplayToggleBtn
@@ -43,16 +96,39 @@ export function bindRadioControls() {
     this.actions.layoutCockpit();
   };
   this._setCockpitDisclosure = setCockpitDisclosure;
-  /** @param {'display'|'radio'} kind @returns {boolean} Whether it is open. */
-  this._cockpitDisclosureOpen = (kind) =>
-    Boolean(this._cockpitDisclosure?.[kind]);
+  const syncTunerTape = (coordinate) => {
+    const scale = this._radioTuner?.querySelector('.radio-tuner-scale');
+    const dial = this._radioTuner?.querySelector('.radio-tuner-dial');
+    if (!scale || !dial) return null;
+    const model = buildRadioTunerTicks(
+      coordinate,
+      this._radioTunerStations.length,
+      dial.getBoundingClientRect().width,
+    );
+    while (scale.children.length < model.ticks.length) {
+      const tick = document.createElement('span');
+      tick.className = 'radio-tuner-tick';
+      scale.append(tick);
+    }
+    while (scale.children.length > model.ticks.length)
+      scale.lastElementChild?.remove();
+    model.ticks.forEach((entry, index) => {
+      const tick = scale.children[index];
+      tick.style.left = `${entry.xPx}px`;
+      tick.textContent = entry.label;
+      tick.dataset.stationIndex = String(entry.stationIndex);
+      tick.classList.toggle('is-current', entry.current);
+    });
+    scale.style.setProperty('--radio-tuner-tick-pitch', `${model.pitchPx}px`);
+    return model;
+  };
   const tunerPreview = ({
     coordinate = this._radioTunerCoordinate,
     syncStatic = true,
     rotate = true,
   } = {}) => {
     const slot = radioTunerSlot(
-      this._radioTunerView.slot,
+      this._radioTunerSlider?.value,
       this._radioTunerStations.length,
     );
     const station = slot.locked
@@ -70,26 +146,35 @@ export function bindRadioControls() {
         ? 0.5
         : resolvedCoordinate / Math.max(1, this._radioTunerStations.length - 1);
     this._radioTunerCoordinate = resolvedCoordinate;
-    showRadioTuner.call(this, {
-      ratio,
-      static: syncStatic ? false : Boolean(this._radioState?.tuningStatic),
-      coordinate: resolvedCoordinate,
-      count: this._radioTunerStations.length,
-      value: station
+    this._radioTuner?.style.setProperty('--radio-tuner-ratio', String(ratio));
+    this._radioTuner?.classList.toggle(
+      'is-static',
+      syncStatic ? false : Boolean(this._radioState?.tuningStatic),
+    );
+    syncTunerTape(resolvedCoordinate);
+    if (this._radioTunerValue) {
+      this._radioTunerValue.textContent = station
         ? t('CH {index} / {total}', {
             index: String(slot.stationIndex + 1).padStart(2, '0'),
             total: String(this._radioTunerStations.length).padStart(2, '0'),
           })
-        : t('NO STATIONS'),
-      station: station?.name || t('NO STATION AVAILABLE'),
-      valuetext: station
-        ? t('{name}, station {index} of {total}', {
-            name: station.name,
-            index: slot.stationIndex + 1,
-            total: this._radioTunerStations.length,
-          })
-        : t('No station available'),
-    });
+        : t('NO STATIONS');
+    }
+    if (this._radioTunerStation)
+      this._radioTunerStation.textContent =
+        station?.name || t('NO STATION AVAILABLE');
+    if (this._radioTunerSlider) {
+      this._radioTunerSlider.setAttribute(
+        'aria-valuetext',
+        station
+          ? t('{name}, station {index} of {total}', {
+              name: station.name,
+              index: slot.stationIndex + 1,
+              total: this._radioTunerStations.length,
+            })
+          : t('No station available'),
+      );
+    }
     if (syncStatic)
       this.radio.previewTuningStation(station?.id || null, { rotate });
     return station;
@@ -100,12 +185,20 @@ export function bindRadioControls() {
     this._radioTunerBandSignature = this._radioTunerStations
       .map((station) => station.id)
       .join('|');
-    showRadioTuner.call(this, {
-      max: Math.max(0, this._radioTunerStations.length - 1),
-    });
+    if (this._radioTunerSlider) {
+      this._radioTunerSlider.min = '0';
+      this._radioTunerSlider.max = String(
+        Math.max(0, this._radioTunerStations.length - 1),
+      );
+      this._radioTunerSlider.step = '1';
+    }
   };
   const refreshTunerBand = ({ force = false } = {}) => {
-    if (this._radioTunerDragging || !this._radioTunerView.available)
+    if (
+      this._radioTunerDragging ||
+      this._radioTuner?.hidden ||
+      this._radioTunerSlider?.disabled
+    )
       return false;
     const selectedId = this._radioState?.selected?.id || null;
     const pool = this.radio.getTunerStations(750);
@@ -128,16 +221,14 @@ export function bindRadioControls() {
       selectedPoolIndex >= 0 ? selectedPoolIndex : 0,
       this._radioTunerStations.length,
     );
-    showRadioTuner.call(this, { slot: slot.slot });
+    this._radioTunerSlider.value = String(slot.slot);
     this._radioTunerCoordinate = slot.stationIndex >= 0 ? slot.stationIndex : 0;
     tunerPreview({ coordinate: this._radioTunerCoordinate, syncStatic: false });
     return true;
   };
   this._refreshRadioTunerBand = refreshTunerBand;
-  this._refreshRadioTunerText = () =>
-    tunerPreview({ coordinate: this._radioTunerCoordinate, syncStatic: false });
   const beginTuner = () => {
-    if (this._radioTunerDragging || !this._radioTunerView.available)
+    if (this._radioTunerDragging || this._radioTunerSlider?.disabled)
       return false;
     refreshTunerBand();
     if (!this._radioTunerStations.length || !this.radio.beginTuning())
@@ -146,7 +237,7 @@ export function bindRadioControls() {
     // Only an explicit globe pointer/wheel gesture releases camera pinning.
     this._radioTunerBandPinnedForNavigation = true;
     this._radioTunerDragging = true;
-    showRadioTuner.call(this, { dragging: true });
+    this._radioTuner?.classList.add('is-dragging');
     const selectedIndex = this._radioTunerStations.findIndex(
       (station) => station.id === this._radioState?.selected?.id,
     );
@@ -154,7 +245,7 @@ export function bindRadioControls() {
       selectedIndex >= 0 ? selectedIndex : 0,
       this._radioTunerStations.length,
     );
-    showRadioTuner.call(this, { slot: slot.slot });
+    this._radioTunerSlider.value = String(slot.slot);
     this._radioTunerCoordinate = slot.stationIndex >= 0 ? slot.stationIndex : 0;
     this._radioTunerDragStartSlot = slot.slot;
     this._radioTunerDragSnapshot = {
@@ -177,28 +268,31 @@ export function bindRadioControls() {
       this._radioTunerPool = [...dragSnapshot.stations];
       this._radioTunerBandSignature = dragSnapshot.bandSignature;
       this._radioTunerSelectedId = dragSnapshot.selectedId;
-      const startSlot = radioTunerSlot(
-        dragSnapshot.slot,
-        this._radioTunerStations.length,
-      );
-      showRadioTuner.call(this, { max: startSlot.max, slot: startSlot.slot });
+      if (this._radioTunerSlider) {
+        const startSlot = radioTunerSlot(
+          dragSnapshot.slot,
+          this._radioTunerStations.length,
+        );
+        this._radioTunerSlider.max = String(startSlot.max);
+        this._radioTunerSlider.value = String(startSlot.slot);
+      }
       this._radioTunerCoordinate = Number.isFinite(dragSnapshot.coordinate)
         ? dragSnapshot.coordinate
         : dragSnapshot.slot;
-    } else if (!commit) {
-      showRadioTuner.call(this, { slot: this._radioTunerDragStartSlot });
+    } else if (!commit && this._radioTunerSlider) {
+      this._radioTunerSlider.value = String(this._radioTunerDragStartSlot);
       this._radioTunerCoordinate = this._radioTunerDragStartSlot;
     }
     let station = tunerPreview({
       coordinate: this._radioTunerCoordinate,
       rotate: commit,
     });
-    if (commit && !station) {
+    if (commit && !station && this._radioTunerSlider) {
       const snapped = radioTunerCommitSlot(
-        this._radioTunerView.slot,
+        this._radioTunerSlider.value,
         this._radioTunerStations.length,
       );
-      showRadioTuner.call(this, { slot: snapped.slot });
+      this._radioTunerSlider.value = String(snapped.slot);
       this._radioTunerCoordinate = snapped.stationIndex;
       station = tunerPreview({ coordinate: this._radioTunerCoordinate });
     }
@@ -221,18 +315,21 @@ export function bindRadioControls() {
     this._radioTunerKeyboardKey = null;
     if (commit && (!result || result.ok)) refreshTunerBand();
     this._radioTunerDragSnapshot = null;
-    // The tuner lays out the snapped position while transitions are still
-    // disabled before it drops the drag class, so the needle cannot
-    // interpolate from the released gap.
-    showRadioTuner.call(this, { dragging: false });
+    // Flush the snapped position while transitions are still disabled so
+    // removing the drag class cannot interpolate from the released gap.
+    void this._radioTunerNeedle?.offsetLeft;
+    this._radioTuner?.classList.remove('is-dragging');
     if (result && !result.ok) {
       this._radioTunerBandPinnedForNavigation = false;
       if (result.reason === 'station-unavailable') {
-        showRadioTuner.call(this, {
-          value: t('OFF AIR'),
-          station: t('STATION UNAVAILABLE'),
-          valuetext: t('Station unavailable after directory refresh'),
-        });
+        if (this._radioTunerValue)
+          this._radioTunerValue.textContent = t('OFF AIR');
+        if (this._radioTunerStation)
+          this._radioTunerStation.textContent = t('STATION UNAVAILABLE');
+        this._radioTunerSlider?.setAttribute(
+          'aria-valuetext',
+          t('Station unavailable after directory refresh'),
+        );
       }
     }
   };
@@ -241,12 +338,9 @@ export function bindRadioControls() {
     const pool = this._radioTunerPool.length
       ? this._radioTunerPool
       : this._radioTunerStations;
-    // Silent unless a stream is active; an active stream follows the selection.
-    const { audioState } = this.radio.getUIState();
     const cycled = this.radio.cycleStation(direction, {
       rotate,
       stationIds: pool.map((station) => station.id),
-      autoplay: ['loading', 'buffering', 'playing'].includes(audioState),
       origin: 'user',
     });
     if (!cycled) {
@@ -254,30 +348,13 @@ export function bindRadioControls() {
       return;
     }
   };
-  // Both Enable buttons render from the Radio store; before its first render
-  // there is nothing shown to mark, so the button is marked directly.
-  const setTriggerBusy = (trigger, busy) => {
-    const where =
-      trigger === this._radioEnableBtn
-        ? 'panel'
-        : trigger === this._cockpitRadioEnableBtn
-          ? 'cockpit'
-          : null;
-    if (where && showRadioEnableBusy.call(this, busy, where)) return;
-    trigger.setAttribute('aria-disabled', String(busy));
-    trigger.setAttribute('aria-busy', String(busy));
-  };
-  // The store patches aria-busy on the next render, so a second press before
-  // it lands is turned away by this set.
-  const busyTriggers = new Set();
   const toggleRadio = async (trigger) => {
     if (!this.actions.isRegistered()) return;
-    if (busyTriggers.has(trigger)) return;
     if (trigger.getAttribute('aria-busy') === 'true') return;
     const enabling = !this.actions.isEnabled();
     const revealAfterEnable = enabling && trigger === this._radioEnableBtn;
-    busyTriggers.add(trigger);
-    setTriggerBusy(trigger, true);
+    trigger.setAttribute('aria-disabled', 'true');
+    trigger.setAttribute('aria-busy', 'true');
     try {
       const toggled = await this.actions.runUserAction(
         (notificationToken) =>
@@ -309,14 +386,73 @@ export function bindRadioControls() {
       if (revealAfterEnable)
         await this._revealRadioControlsAfterExplicitEnable(trigger);
     } finally {
-      busyTriggers.delete(trigger);
       if (!this.destroyed) {
-        setTriggerBusy(trigger, false);
+        trigger.setAttribute('aria-disabled', 'false');
+        trigger.setAttribute('aria-busy', 'false');
         if (revealAfterEnable && trigger.isConnected)
           trigger.focus({ preventScroll: true });
       }
     }
   };
+  this.listen(
+    this._radioEnableBtn,
+    'click',
+    () => void toggleRadio(this._radioEnableBtn),
+  );
+  this.listen(
+    this._contextRadioMiniEnableBtn,
+    'click',
+    () => void toggleRadio(this._contextRadioMiniEnableBtn),
+  );
+  this.listen(
+    this._cockpitRadioEnableBtn,
+    'click',
+    () => void toggleRadio(this._cockpitRadioEnableBtn),
+  );
+  this.listen(this._contextRadioToggleBtn, 'click', () => {
+    const contextPanel = document.getElementById('global-context-panel');
+    if (contextPanel && !contextPanel.classList.contains('collapsed')) {
+      setRadioDisclosure(false);
+      this.actions.setPanelCollapsed('radio-panel', false, { explicit: true });
+      void this._revealRadioPanelInsideContext({
+        focusTarget: this._radioPanel?.querySelector(
+          '[data-collapse-target="radio-panel"]',
+        ),
+      });
+      return;
+    }
+    setRadioDisclosure(
+      !this._contextRadioDock?.classList.contains('disclosure-open'),
+    );
+  });
+  this.listen(this._contextRadioMiniCloseBtn, 'click', () => {
+    setRadioDisclosure(false, { returnFocus: true });
+  });
+  this.listen(this._contextRadioDetailsBtn, 'click', () => {
+    if (!this.actions.isCockpitActive())
+      this.actions.setPanelCollapsed('global-context-panel', false, {
+        explicit: true,
+      });
+    this.actions.setPanelCollapsed('radio-panel', false, { explicit: true });
+    setRadioDisclosure(false);
+    this._radioEnableBtn?.focus({ preventScroll: true });
+  });
+  this.listen(this._cockpitRadioToggleBtn, 'click', () => {
+    const open =
+      this._cockpitRadioToggleBtn.getAttribute('aria-expanded') === 'true';
+    setCockpitDisclosure('radio', !open);
+  });
+  this.listen(
+    document,
+    'pointerdown',
+    (event) => {
+      if (!this._contextRadioDock?.classList.contains('disclosure-open'))
+        return;
+      if (event.target?.closest?.('#context-radio-dock')) return;
+      setRadioDisclosure(false);
+    },
+    tunerListenerOptions,
+  );
   this.listen(
     document,
     'pointerdown',
@@ -338,9 +474,34 @@ export function bindRadioControls() {
     document,
     'keydown',
     (event) => {
+      if (
+        event.key !== 'Escape' ||
+        !this._contextRadioDock?.classList.contains('disclosure-open')
+      )
+        return;
+      event.preventDefault();
+      // Immediate: a plain stopPropagation() still lets every LATER listener on
+      // this same document run, so closing the disclosure ALSO dismissed the
+      // first-run launcher — one key, two actions. Matches the cockpit
+      // disclosure handler directly below.
+      event.stopImmediatePropagation();
+      const escapedFromDisclosure =
+        event.target === this._contextRadioToggleBtn ||
+        this._contextRadioToggleBtn?.contains?.(event.target);
+      setRadioDisclosure(false, { returnFocus: !escapedFromDisclosure });
+      if (escapedFromDisclosure) this._contextRadioToggleBtn?.blur?.();
+    },
+    { capture: true },
+  );
+  this.listen(
+    document,
+    'keydown',
+    (event) => {
       if (event.key !== 'Escape') return;
-      const displayOpen = this._cockpitDisclosureOpen('display');
-      const radioOpen = this._cockpitDisclosureOpen('radio');
+      const displayOpen =
+        this._cockpitDisplayToggleBtn?.getAttribute('aria-expanded') === 'true';
+      const radioOpen =
+        this._cockpitRadioToggleBtn?.getAttribute('aria-expanded') === 'true';
       if (!displayOpen && !radioOpen) return;
       const nestedPanel = event.target?.closest?.(
         '.panel-collapsible:not(.collapsed), #param-slider-panel:not(.collapsed)',
@@ -383,12 +544,81 @@ export function bindRadioControls() {
     window,
     'gev:cockpit-context-expanded',
     () => {
-      // Contact takes the room the open left panel had.
       this.actions.setPanelCollapsed('data-panel', true);
-      this.actions.setPanelCollapsed('utilities-panel', true);
     },
     tunerListenerOptions,
   );
+  this.listen(this._radioFilter, 'change', () => {
+    const presentation = this.radio.getUIState();
+    if (!presentation.presentationActive) {
+      this._radioFilter.value = presentation.filter;
+      return;
+    }
+    if (this._radioTunerDragging) finishTuner(false);
+    if (
+      !this.actions.setParams(
+        {
+          filter: this._radioFilter.value,
+        },
+        { origin: 'user' },
+      )
+    ) {
+      this._radioFilter.value = this.radio.getUIState().filter;
+      return;
+    }
+    this._radioTunerBandPinnedForNavigation = false;
+    this._radioTunerPool = [];
+    refreshTunerBand({ force: true });
+  });
+  this.listen(this._radioPrevBtn, 'click', () => cycleRadio(-1));
+  this.listen(this._radioNextBtn, 'click', () => cycleRadio(1));
+  this.listen(
+    this._radioPlayBtn,
+    'click',
+    () => void this.radio.togglePlayback({ origin: 'user' }),
+  );
+  this.listen(this._radioStopBtn, 'click', () =>
+    this.radio.stopPlayback({ origin: 'user' }),
+  );
+  this.listen(this._radioVolume, 'input', () => {
+    const value = Number(this._radioVolume.value);
+    if (this._radioVolumeValue)
+      this._radioVolumeValue.textContent = `${value}%`;
+    this.actions.setParams({ volume: value / 100 }, { origin: 'user' });
+  });
+  this.listen(this._contextRadioMiniPrevBtn, 'click', () => cycleRadio(-1));
+  this.listen(this._contextRadioMiniNextBtn, 'click', () => cycleRadio(1));
+  this.listen(
+    this._contextRadioMiniPlayBtn,
+    'click',
+    () => void this.radio.togglePlayback({ origin: 'user' }),
+  );
+  // Cockpit owns the Cesium camera even though it intentionally clears
+  // viewer.trackedEntity. Station changes must never start the map-view
+  // rotation/fallback flights that would compete with its preUpdate pose.
+  this.listen(this._cockpitRadioPrevBtn, 'click', () =>
+    cycleRadio(-1, { rotate: false }),
+  );
+  this.listen(this._cockpitRadioNextBtn, 'click', () =>
+    cycleRadio(1, { rotate: false }),
+  );
+  this.listen(
+    this._cockpitRadioPlayBtn,
+    'click',
+    () => void this.radio.togglePlayback({ origin: 'user' }),
+  );
+  this.listen(this._contextRadioMiniVolume, 'input', () => {
+    const value = Number(this._contextRadioMiniVolume.value);
+    if (this._contextRadioMiniVolumeValue)
+      this._contextRadioMiniVolumeValue.textContent = `${value}%`;
+    this.actions.setParams({ volume: value / 100 }, { origin: 'user' });
+  });
+  this.listen(this._cockpitRadioVolume, 'input', () => {
+    const value = Number(this._cockpitRadioVolume.value);
+    if (this._cockpitRadioVolumeValue)
+      this._cockpitRadioVolumeValue.textContent = `${value}%`;
+    this.actions.setParams({ volume: value / 100 }, { origin: 'user' });
+  });
   const updateTunerFromPointer = (event) => {
     const rect = this._radioTunerSlider?.getBoundingClientRect();
     if (!rect || !this._radioTunerStations.length) return false;
@@ -404,71 +634,14 @@ export function bindRadioControls() {
       this._radioTunerDragDirection = -1;
     this._radioTunerLastSlot = position.stationIndex;
     this._radioTunerCoordinate = position.coordinate;
-    showRadioTuner.call(this, { slot: position.stationIndex });
+    this._radioTunerSlider.value = String(position.stationIndex);
     tunerPreview({ coordinate: position.coordinate });
     return true;
   };
-  const releaseNavigationBand = () => {
-    this._radioTunerBandPinnedForNavigation = false;
-  };
   this.listen(
-    this.canvas,
+    this._radioTunerSlider,
     'pointerdown',
-    releaseNavigationBand,
-    tunerListenerOptions,
-  );
-  this.listen(
-    this.canvas,
-    'wheel',
-    releaseNavigationBand,
-    tunerListenerOptions,
-  );
-  // The directory order is catalog/filter authority, not camera authority.
-  // Globe motion therefore never rebuilds or re-ranks the frequency band.
-  this._radioSelectedHandler = () =>
-    this.actions.setPanelCollapsed('radio-panel', false);
-  this.listen(document, 'gev:radio-selected', this._radioSelectedHandler);
-  // The Radio panel's and Cockpit's controls, and the tuner slider's events,
-  // call these through the store.
-  // Cockpit owns the Cesium camera even though it intentionally clears
-  // viewer.trackedEntity, so its station steps pass `rotate: false`: they
-  // must never start the map-view rotation/fallback flights that would
-  // compete with its preUpdate pose.
-  this._storeToken = this.store?.connect?.({
-    /** @param {'panel'|'cockpit'} where Which Enable button was pressed. */
-    toggleRadio: (where) =>
-      void toggleRadio(
-        where === 'cockpit'
-          ? this._cockpitRadioEnableBtn
-          : this._radioEnableBtn,
-      ),
-    toggleCockpitRadio: () =>
-      setCockpitDisclosure('radio', !this._cockpitDisclosureOpen('radio')),
-    /**
-     * @param {string} filter
-     * @returns {string} The station tag the filter shows afterwards.
-     */
-    setRadioFilter: (filter) => {
-      if (!this.radio.getUIState().presentationActive)
-        return this.radio.getUIState().filter;
-      if (this._radioTunerDragging) finishTuner(false);
-      if (!this.actions.setParams({ filter }, { origin: 'user' }))
-        return this.radio.getUIState().filter;
-      this._radioTunerBandPinnedForNavigation = false;
-      this._radioTunerPool = [];
-      refreshTunerBand({ force: true });
-      return filter;
-    },
-    cycleRadio,
-    toggleRadioPlayback: () =>
-      void this.radio.togglePlayback({ origin: 'user' }),
-    stopRadio: () => this.radio.stopPlayback({ origin: 'user' }),
-    setRadioVolume: (percent) => {
-      const value = Number(percent);
-      showRadioVolume.call(this, value);
-      this.actions.setParams({ volume: value / 100 }, { origin: 'user' });
-    },
-    tunerPointerDown: (event) => {
+    (event) => {
       if (!beginTuner()) return;
       this._radioTunerPointerId = event.pointerId;
       this._radioTunerSlider.focus({ preventScroll: true });
@@ -480,7 +653,12 @@ export function bindRadioControls() {
       updateTunerFromPointer(event);
       event.preventDefault();
     },
-    tunerPointerMove: (event) => {
+    tunerListenerOptions,
+  );
+  this.listen(
+    this._radioTunerSlider,
+    'pointermove',
+    (event) => {
       if (
         !this._radioTunerDragging ||
         this._radioTunerPointerId !== event.pointerId
@@ -489,17 +667,17 @@ export function bindRadioControls() {
       updateTunerFromPointer(event);
       event.preventDefault();
     },
-    tunerInput: () => {
+    tunerListenerOptions,
+  );
+  this.listen(
+    this._radioTunerSlider,
+    'input',
+    () => {
       if (this._radioTunerPointerId !== null || this._radioTunerKeyboardKey)
         return;
-      // A drag the input starts begins from the selected station's slot.
-      if (this._radioTunerDragging)
-        showRadioTuner.call(this, {
-          slot: Number(this._radioTunerSlider.value),
-        });
-      else if (!beginTuner()) return;
+      if (!this._radioTunerDragging && !beginTuner()) return;
       const inputSlot = radioTunerSlot(
-        this._radioTunerView.slot,
+        this._radioTunerSlider.value,
         this._radioTunerStations.length,
       );
       if (inputSlot.slot > this._radioTunerLastSlot)
@@ -510,11 +688,21 @@ export function bindRadioControls() {
       this._radioTunerCoordinate = inputSlot.stationIndex;
       tunerPreview({ coordinate: this._radioTunerCoordinate });
     },
-    tunerChange: () => {
+    tunerListenerOptions,
+  );
+  this.listen(
+    this._radioTunerSlider,
+    'change',
+    () => {
       if (this._radioTunerPointerId === null && !this._radioTunerKeyboardKey)
         finishTuner(true);
     },
-    tunerPointerUp: (event) => {
+    tunerListenerOptions,
+  );
+  this.listen(
+    this._radioTunerSlider,
+    'pointerup',
+    (event) => {
       if (this._radioTunerPointerId !== event.pointerId) return;
       updateTunerFromPointer(event);
       finishTuner(true);
@@ -525,7 +713,12 @@ export function bindRadioControls() {
       }
       event.preventDefault();
     },
-    tunerPointerCancel: (event) => {
+    tunerListenerOptions,
+  );
+  this.listen(
+    this._radioTunerSlider,
+    'pointercancel',
+    (event) => {
       if (
         this._radioTunerPointerId !== null &&
         this._radioTunerPointerId !== event.pointerId
@@ -538,14 +731,24 @@ export function bindRadioControls() {
       }
       finishTuner(false);
     },
-    tunerLostPointerCapture: (event) => {
+    tunerListenerOptions,
+  );
+  this.listen(
+    this._radioTunerSlider,
+    'lostpointercapture',
+    (event) => {
       if (
         this._radioTunerDragging &&
         this._radioTunerPointerId === event.pointerId
       )
         finishTuner(false);
     },
-    tunerKeyDown: (event) => {
+    tunerListenerOptions,
+  );
+  this.listen(
+    this._radioTunerSlider,
+    'keydown',
+    (event) => {
       if (event.key === 'Escape' && this._radioTunerDragging) {
         event.preventDefault();
         finishTuner(false);
@@ -567,7 +770,7 @@ export function bindRadioControls() {
       this._radioTunerKeyboardKey = event.key;
       const max = Math.max(0, this._radioTunerStations.length - 1);
       const current = radioTunerSlot(
-        this._radioTunerView.slot,
+        this._radioTunerSlider.value,
         this._radioTunerStations.length,
       ).slot;
       const page = Math.max(1, Math.round(max / 10));
@@ -588,10 +791,15 @@ export function bindRadioControls() {
         this._radioTunerDragDirection = -1;
       this._radioTunerLastSlot = slot.slot;
       this._radioTunerCoordinate = slot.stationIndex;
-      showRadioTuner.call(this, { slot: slot.slot });
+      this._radioTunerSlider.value = String(slot.slot);
       tunerPreview({ coordinate: this._radioTunerCoordinate });
     },
-    tunerKeyUp: (event) => {
+    tunerListenerOptions,
+  );
+  this.listen(
+    this._radioTunerSlider,
+    'keyup',
+    (event) => {
       if (
         !this._radioTunerKeyboardKey ||
         event.key !== this._radioTunerKeyboardKey
@@ -600,6 +808,32 @@ export function bindRadioControls() {
       event.preventDefault();
       finishTuner(true);
     },
-    tunerBlur: () => finishTuner(true),
-  });
+    tunerListenerOptions,
+  );
+  this.listen(
+    this._radioTunerSlider,
+    'blur',
+    () => finishTuner(true),
+    tunerListenerOptions,
+  );
+  const releaseNavigationBand = () => {
+    this._radioTunerBandPinnedForNavigation = false;
+  };
+  this.listen(
+    this.canvas,
+    'pointerdown',
+    releaseNavigationBand,
+    tunerListenerOptions,
+  );
+  this.listen(
+    this.canvas,
+    'wheel',
+    releaseNavigationBand,
+    tunerListenerOptions,
+  );
+  // The directory order is catalog/filter authority, not camera authority.
+  // Globe motion therefore never rebuilds or re-ranks the frequency band.
+  this._radioSelectedHandler = () =>
+    this.actions.setPanelCollapsed('radio-panel', false);
+  this.listen(document, 'gev:radio-selected', this._radioSelectedHandler);
 }

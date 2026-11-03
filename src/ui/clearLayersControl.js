@@ -1,12 +1,6 @@
 import { t } from '../i18n/index.js';
 
-/**
- * Keep the clear action focusable while busy; the caller owns its
- * transaction. The globe actions view renders the button from the globe
- * actions store now; this stays exported from `./ui/layers` for hosts that
- * imported it.
- * @deprecated
- */
+/** Keep the clear action focusable while busy; the caller owns its transaction. */
 export function bindClearLayersControl(button, clear) {
   let destroyed = false;
   const click = () => {

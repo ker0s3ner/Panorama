@@ -55,9 +55,6 @@ export class LayerBindings {
   get _radioControls() {
     return this.readControls()._radioControls;
   }
-  get _streetLevelControls() {
-    return this.readControls()._streetLevelControls;
-  }
   observeCamera() {
     this._cctvRequestFocusHandler = (event) =>
       routeCctvFocusRequest(
@@ -238,8 +235,6 @@ export class LayerBindings {
     this._syncContextModeButtons();
     this._cctvControls.connect();
     this._radioControls.connect();
-    // Its switch-on requests come from the manager, which arrives after it.
-    this._streetLevelControls?.connect();
     this._connectDirectionsCamera();
     this._connectWeatherCamera();
     if (!this._awarenessSelectedHandler) {

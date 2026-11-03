@@ -70,16 +70,10 @@ export function createGnssIntegrityLayer({
   viewAnchor = defaultGnssViewAnchor,
   now = () => Date.now(),
   monotonicNow = () => performance.now(),
-  windowMs: requestedWindowMs,
+  windowMs = GNSS_WINDOW_MS,
 } = {}) {
   if (typeof source?.getSnapshot !== 'function')
     throw new TypeError('GNSS integrity layer requires a snapshot source');
-  // A source may set its own evidence window; anything but a positive finite
-  // duration keeps the default.
-  const windowMs =
-    Number.isFinite(requestedWindowMs) && requestedWindowMs > 0
-      ? requestedWindowMs
-      : GNSS_WINDOW_MS;
   let _viewer = null;
   let _primitives = null;
   let _request = null;
@@ -381,8 +375,7 @@ export function createGnssIntegrityLayer({
         chips: [],
         info:
           t(
-            'Regional sample · 250 nm radius · cells from visited views over {minutes} min',
-            { minutes: formatNumber(provenance.window.minutes) },
+            'Regional sample · 250 nm radius · cells from visited views over 30 min',
           ) +
           (_lastError && _retryAt
             ? ` · ${translateFeedError(_lastError)} · ${

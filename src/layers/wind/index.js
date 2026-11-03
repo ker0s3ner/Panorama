@@ -6,8 +6,11 @@ import {
   windReadingResult,
   windUnitChips,
 } from './presentation.js';
-import { inspectWindAtCenter, WIND_UNITS } from './inspection.js';
-import { createWindInspectionMarker } from './inspectionMarker.js';
+import {
+  inspectWindAtCenter,
+  createWindInspectionMarker,
+  WIND_UNITS,
+} from './inspection.js';
 import { t, msg, translateKnown } from '../../i18n/index.js';
 import { unitLabel } from '../../ui/unitLabels.js';
 
@@ -177,7 +180,7 @@ export function createWindLayer({
           overlay: requestedScalar(),
         });
         if (!enabled || controller.signal.aborted || request !== controller)
-          return enabled && !signal?.aborted && request !== controller;
+          return false;
         manifest = snapshot;
         error = null;
         if (sampledPosition) sample(sampledPosition);
@@ -191,8 +194,7 @@ export function createWindLayer({
         }
         return true;
       } catch (cause) {
-        if (controller.signal.aborted || request !== controller)
-          return enabled && !signal?.aborted && request !== controller;
+        if (controller.signal.aborted || request !== controller) return false;
         error = cause?.message || msg('Wind source unavailable');
         return true;
       } finally {

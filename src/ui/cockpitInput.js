@@ -8,8 +8,16 @@ export function onKeyDown(event) {
     // focus. Its target handler closes the overlay and restores attribution
     // focus; Cockpit must stay active behind it.
     if (event.target?.closest?.('.cesium-credit-lightbox')) return;
-    // An open Display or Radio popover takes Escape itself.
-    if (this.isUtilityDisclosureOpen?.()) return;
+    if (
+      document
+        .getElementById('context-radio-dock')
+        ?.classList.contains('disclosure-open')
+    )
+      return;
+    if (
+      document.querySelector('#cockpit-utility-controls [aria-expanded="true"]')
+    )
+      return;
     if (this.context?.contains(event.target) && !this.contextCollapsed) {
       event.preventDefault();
       event.stopImmediatePropagation();
@@ -56,8 +64,7 @@ export function onKeyDown(event) {
     event.preventDefault();
     event.stopImmediatePropagation();
     if (!this.active && !this.isEntryAllowed()) return;
-    if (this.active) this.exit();
-    else this.enter();
+    const changed = this.active ? this.exit() : this.enter();
     return;
   }
 }

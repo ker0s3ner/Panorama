@@ -1,10 +1,11 @@
 import { retroShader } from '../styles/retro.js';
 import { animeShader } from '../styles/anime.js';
 import { noirShader } from '../styles/noir.js';
+import { snowShader } from '../styles/snow.js';
 import { nightVisionShader } from '../styles/surveillance.js';
 import { thermalShader } from '../styles/thermal.js';
 import { BLOOM_INTENSITY_DEFAULT } from '../bloom.js';
-import { msg } from '../i18n/marker.js';
+import { msg } from '../i18n/index.js';
 
 /** Duration (ms) for shader intensity crossfade between style presets. */
 export const TRANSITION_DURATION_MS = 500;
@@ -15,6 +16,7 @@ export const STYLES = {
   thermal: thermalShader,
   anime: animeShader,
   noir: noirShader,
+  snow: snowShader,
 };
 
 /**
@@ -154,4 +156,5 @@ export const STYLE_STATUS_LABELS = {
   thermal: msg('FLIR'),
   anime: msg('ANIME'),
   noir: msg('NOIR'),
+  snow: msg('SNOW'),
 };

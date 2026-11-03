@@ -12,9 +12,8 @@ export class NavigationController {
   constructor({
     viewer,
     tracking,
-    settleSearch = () => {},
+    searchInput,
     interruptCameraMotion,
-    interruptGlobeRotation = () => {},
     isCockpitActive,
     clearLocation,
     cancelShareSelection,
@@ -26,9 +25,8 @@ export class NavigationController {
     Object.assign(this, {
       viewer,
       tracking,
-      settleSearch,
+      searchInput,
       interruptCameraMotion,
-      interruptGlobeRotation,
       isCockpitActive,
       clearLocation,
       cancelShareSelection,
@@ -48,7 +46,6 @@ export class NavigationController {
     cancelPendingSelection = true,
     clearSearchedLocation = true,
   } = {}) {
-    this.interruptGlobeRotation('navigation-intent');
     cancelCameraArrival(this.viewer);
     this.cancelOrientation();
     const { flightsLayer, militaryFlightsLayer, satellitesLayer } =
@@ -119,11 +116,12 @@ export class NavigationController {
     return this._navigationGeneration;
   }
 
-  /** A search that found nothing keeps its query and focus so it can be corrected. */
-  _settleLocationSearchUi(generation, { keepQuery = false } = {}) {
+  _settleLocationSearchUi(generation) {
     if (this._activeLocationSearchGeneration !== generation) return;
     this._activeLocationSearchGeneration = null;
-    this.settleSearch({ keepQuery });
+    this.searchInput?.classList.remove('searching', 'expanded');
+    if (this.searchInput) this.searchInput.value = '';
+    this.searchInput?.blur();
   }
 
   _releaseFollowCamera({
@@ -240,7 +238,7 @@ export class NavigationController {
     });
   }
 
-  _reassertNavigationHandoff(generation, { trackingOrigin = 'tool' } = {}) {
+  _reassertNavigationHandoff(generation) {
     return reassertNavigationHandoff({
       generation,
       currentGeneration: this._navigationGeneration,
@@ -252,7 +250,7 @@ export class NavigationController {
       // was refused by the cockpit leaves the old readout standing.
       release: () => {
         this.clearLocation();
-        return this._releaseFollowCamera({ trackingOrigin });
+        return this._releaseFollowCamera();
       },
     });
   }

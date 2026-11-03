@@ -1,4 +1,4 @@
-import { formatNumber, isolate, msg, t } from '../i18n/index.js';
+import { formatNumber, t, msg } from '../i18n/index.js';
 
 /** Shortest-wrap signed degrees, for heading offsets typed as absolute values. */
 const signedNormalizeDeg = (deg) => ((((deg + 180) % 360) + 360) % 360) - 180;
@@ -78,14 +78,13 @@ function calValueText(field, value) {
       useGrouping: false,
       ...options,
     });
-    return `${t(field.label)} ${isolate(t('{value}m', { value: metres }))}`;
+    return `${t(field.label)} ${t('{value}m', { value: metres })}`;
   }
   const number = formatNumber(Number(value), {
     useGrouping: false,
     ...options,
   });
-  // Isolated so a minus sign stays on its number in right-to-left text.
-  return `${t(field.label)} ${isolate(`${number}${field.unit}`)}`;
+  return `${t(field.label)} ${number}${field.unit}`;
 }
 
 export function _activeCctvCameraId() {
@@ -111,79 +110,99 @@ export function _resetCctvCalibration() {
 export function _beginCctvCalValueEdit(chip) {
   if (this.destroyed) return;
   this._calibrationEdit?.(false);
-  const fieldId = chip.dataset.calField;
-  const field = CCTV_CAL_FIELDS[fieldId];
+  const field = CCTV_CAL_FIELDS[chip.dataset.calField];
   const activeCamera = this._cctvState?.activeCamera;
   if (!field || !activeCamera?.basePose) return;
   const cameraId = this._activeCctvCameraId();
   const basePose = { ...activeCamera.basePose };
+  const editListeners = new AbortController();
+  const startValue = field.get(activeCamera);
+  const input = document.createElement('input');
+  input.type = 'number';
+  input.step = field.decimals > 0 ? '0.1' : '1';
+  input.value = Number(startValue).toFixed(field.decimals);
+  input.className = 'cctv-cal-input';
+  chip.textContent = `${t(field.label)} `;
+  chip.appendChild(input);
+  input.focus();
+  input.select();
 
   let finished = false;
-  /**
-   * End the edit: commit converts the typed value to a calibration offset
-   * against the pose captured when it began; anything else just closes it.
-   */
-  const finish = (commit, typedText = '') => {
+  const finish = (commit) => {
     if (finished) return;
     finished = true;
+    editListeners.abort();
     this._calibrationEdit = null;
-    this.store.setCalEdit(null);
-    const typed = parseFloat(typedText);
+    const typed = parseFloat(input.value);
+    input.remove();
     if (
       commit &&
       !this.destroyed &&
       Number.isFinite(typed) &&
       this._cctvState?.enabled &&
       this.actions.isEnabled() &&
-      cameraId &&
-      cameraId === this._activeCctvCameraId() &&
-      this.actions.setParams
+      cameraId === this._activeCctvCameraId()
     ) {
-      this.actions.setParams(
-        {
-          selectedCameraId: cameraId,
-          calibration: { cameraId, patch: field.toPatch(typed, basePose) },
-        },
-        { origin: 'user' },
-      );
+      if (cameraId && this.actions.setParams) {
+        this.actions.setParams(
+          {
+            selectedCameraId: cameraId,
+            calibration: { cameraId, patch: field.toPatch(typed, basePose) },
+          },
+          { origin: 'user' },
+        );
+        return; // re-render restores the chip text from fresh state
+      }
     }
+    this._syncCctvCalReadout(
+      !!this._cctvState?.enabled,
+      this._cctvState?.activeCamera || null,
+    );
   };
   this._calibrationEdit = finish;
-  // The readout renders a number input in this chip; Enter or blur commits
-  // and Escape cancels through `finish`.
-  this.store.setCalEdit({
-    field: fieldId,
-    label: `${t(field.label)} `,
-    ariaLabel: t(field.label),
-    step: field.decimals > 0 ? '0.1' : '1',
-    value: Number(field.get(activeCamera)).toFixed(field.decimals),
-    finish,
+  input.addEventListener(
+    'keydown',
+    (event) => {
+      if (event.key === 'Enter') finish(true);
+      else if (event.key === 'Escape') {
+        event.preventDefault();
+        finish(false);
+      }
+      event.stopPropagation();
+    },
+    { signal: editListeners.signal },
+  );
+  input.addEventListener('blur', () => finish(true), {
+    signal: editListeners.signal,
+  });
+  input.addEventListener('click', (event) => event.stopPropagation(), {
+    signal: editListeners.signal,
   });
 }
 
-/**
- * The calibration block for a camera state: ADJUST, the pose chips and
- * whether calibration is possible. Chips show the effective pose.
- * @param {object|null} state Camera layer UI state.
- * @param {boolean} enabled Whether the layer is on.
- */
-export function presentCctvCalibration(state, enabled) {
-  const activeCamera = state?.activeCamera || null;
+export function _syncCctvCalReadout(enabled, activeCamera) {
   const canCalibrate = !!enabled && !!activeCamera;
-  const adjustOn = !!state?.calibrationMode;
-  const values = {};
-  for (const [id, field] of Object.entries(CCTV_CAL_FIELDS)) {
-    const value = canCalibrate ? field.get(activeCamera) : null;
-    values[id] = Number.isFinite(value)
-      ? calValueText(field, value)
-      : `${t(field.label)} --`;
+  if (this._cctvAdjustBtn) {
+    const adjustOn = !!this._cctvState?.calibrationMode;
+    this._cctvAdjustBtn.classList.toggle('active', adjustOn && canCalibrate);
+    this._cctvAdjustBtn.textContent = adjustOn ? t('ADJUST ON') : t('ADJUST');
+    this._cctvAdjustBtn.disabled = !canCalibrate;
   }
-  return {
-    disabled: !canCalibrate,
-    adjust: {
-      active: adjustOn && canCalibrate,
-      text: adjustOn ? t('ADJUST ON') : t('ADJUST'),
-    },
-    values,
-  };
+  if (this._cctvCalReadout) {
+    for (const chip of this._cctvCalReadout.querySelectorAll(
+      '.cctv-cal-value',
+    )) {
+      if (chip.querySelector('input')) continue; // an edit is in flight — don't clobber
+      const field = CCTV_CAL_FIELDS[chip.dataset.calField];
+      if (!field) continue;
+      const value = canCalibrate ? field.get(activeCamera) : null;
+      chip.textContent = Number.isFinite(value)
+        ? calValueText(field, value)
+        : `${t(field.label)} --`;
+      chip.disabled = !canCalibrate;
+    }
+  }
+  for (const el of [this._cctvCalibSaveBtn, this._cctvCalibResetBtn]) {
+    if (el) el.disabled = !canCalibrate;
+  }
 }

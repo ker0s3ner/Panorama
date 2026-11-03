@@ -89,13 +89,12 @@ export function createSceneSharing(director) {
       await job();
     } catch (error) {
       if (alive(owner))
-        dialog.setStatus(
+        dialog.status.textContent =
           error?.name === 'SceneDocumentError'
             ? error.message
             : t(
                 'Could not complete this action. Check the file, references and selected assets.',
-              ),
-        );
+              );
     } finally {
       if (alive(owner)) busy = false;
     }
@@ -158,45 +157,40 @@ export function createSceneSharing(director) {
       if (!alive(owner)) return;
       staged = input;
       inventory(input);
-      dialog.setStatus(t('Ready to import'));
+      dialog.status.textContent = t('Ready to import');
       dialog.text(
         t(
           'Apply replaces the current project. Export your current project first if you want to keep both.',
         ),
       );
-      const apply = dialog.button(
-        t('Apply import'),
-        () =>
-          run(owner, async () => {
-            if (expected !== currentProject())
-              throw new Error('Project changed');
-            apply.disabled = true;
-            const ok = await director.importProjectFile(file, {
-              prepared: input,
-              expectedProject: expected,
-              signal: owner.signal,
-            });
-            if (alive(owner)) {
-              if (ok) close();
-              else {
-                apply.disabled = false;
-                dialog.setStatus(
-                  t(
-                    'Import was not applied. The current project may have changed.',
-                  ),
-                );
-              }
+      const apply = dialog.button(t('Apply import'), () =>
+        run(owner, async () => {
+          if (expected !== currentProject()) throw new Error('Project changed');
+          apply.disabled = true;
+          const ok = await director.importProjectFile(file, {
+            prepared: input,
+            expectedProject: expected,
+            signal: owner.signal,
+          });
+          if (alive(owner)) {
+            if (ok) close();
+            else {
+              apply.disabled = false;
+              dialog.status.textContent = t(
+                'Import was not applied. The current project may have changed.',
+              );
             }
-          }),
-        { hook: 'data-director-apply-import' },
+          }
+        }),
       );
+      apply.dataset.directorApplyImport = '';
     });
   }
   function edit() {
     const scene = director._getSelectedScene(),
       shot = scene?.shots.find((s) => s.id === director._selectedShotId);
     if (!scene || !shot) {
-      director._updateStatus(() => t('Select a scene and shot first'));
+      director._updateStatus(t('Select a scene and shot first'));
       return;
     }
     const owner = open(t('Edit scene details'));
@@ -247,9 +241,9 @@ export function createSceneSharing(director) {
             JSON.parse(shotText.value),
           );
           sceneText.value = json(details);
-          dialog.setStatus(t('Anchor added to draft'));
+          dialog.status.textContent = t('Anchor added to draft');
         }),
-      { place: 'body' },
+      dialog.body,
     );
     dialog.button(
       t('Set move start to current camera'),
@@ -283,11 +277,11 @@ export function createSceneSharing(director) {
             details,
           );
           shotText.value = json(details);
-          dialog.setStatus(
-            t('Move added to draft; destination remains the shot camera'),
+          dialog.status.textContent = t(
+            'Move added to draft; destination remains the shot camera',
           );
         }),
-      { place: 'body' },
+      dialog.body,
     );
     dialog.button(
       t('Use ordinary flight'),
@@ -298,39 +292,37 @@ export function createSceneSharing(director) {
           delete details.move;
           shotText.value = json(details);
         } catch {
-          dialog.setStatus(t('Invalid shot JSON'));
+          dialog.status.textContent = t('Invalid shot JSON');
         }
       },
-      { place: 'body' },
+      dialog.body,
     );
-    dialog.button(
-      t('Apply details'),
-      () =>
-        run(owner, async () => {
-          if (expected !== currentProject()) throw new Error('Project changed');
-          const project = editSceneDetails(
-            original,
-            scene.id,
-            shot.id,
-            JSON.parse(sceneText.value),
-            JSON.parse(shotText.value),
-          );
-          const ok = await director.importProjectFile(
-            {
-              name: 'scene details',
-              text: async () => stringifySceneDocument(project),
-            },
-            {
-              prepared: { project, assets: director._bundleAssets.snapshot() },
-              expectedProject: expected,
-              signal: owner.signal,
-              selection: { sceneId: scene.id, shotId: shot.id },
-            },
-          );
-          if (alive(owner) && ok) close();
-        }),
-      { hook: 'data-director-apply-details' },
+    const apply = dialog.button(t('Apply details'), () =>
+      run(owner, async () => {
+        if (expected !== currentProject()) throw new Error('Project changed');
+        const project = editSceneDetails(
+          original,
+          scene.id,
+          shot.id,
+          JSON.parse(sceneText.value),
+          JSON.parse(shotText.value),
+        );
+        const ok = await director.importProjectFile(
+          {
+            name: 'scene details',
+            text: async () => stringifySceneDocument(project),
+          },
+          {
+            prepared: { project, assets: director._bundleAssets.snapshot() },
+            expectedProject: expected,
+            signal: owner.signal,
+            selection: { sceneId: scene.id, shotId: shot.id },
+          },
+        );
+        if (alive(owner) && ok) close();
+      }),
     );
+    apply.dataset.directorApplyDetails = '';
   }
   function share() {
     let project;
@@ -340,7 +332,7 @@ export function createSceneSharing(director) {
         director._selectedSceneId,
       );
     } catch {
-      director._updateStatus(() => t('Select a scene first'));
+      director._updateStatus(t('Select a scene first'));
       return;
     }
     const owner = open(t('Share selected scene'));
@@ -369,13 +361,13 @@ export function createSceneSharing(director) {
     });
     const files = dialog.input(t('Choose data-pack files'), '', {
       type: 'file',
-      multiple: true,
     });
+    files.multiple = true;
     const folder = dialog.input(t('Or choose a data-pack folder'), '', {
       type: 'file',
-      multiple: true,
-      directory: true,
     });
+    folder.multiple = true;
+    folder.setAttribute('webkitdirectory', '');
     dialog.button(t('Download asset bundle'), () =>
       run(owner, async () => {
         const selected = [...files.files, ...folder.files];
@@ -418,7 +410,7 @@ export function createSceneSharing(director) {
         );
         if (alive(owner)) {
           download(text, 'scene.gevbundle.json');
-          dialog.setStatus(t('Asset bundle downloaded'));
+          dialog.status.textContent = t('Asset bundle downloaded');
         }
       }),
     );

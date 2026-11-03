@@ -1,13 +1,5 @@
-import {
-  formatNumber,
-  isolate,
-  msg,
-  t,
-  tn,
-  translateKnown,
-} from '../i18n/index.js';
+import { formatNumber, msg, t, tn, translateKnown } from '../i18n/index.js';
 import { keyGuidanceText, keyRequirementText } from './keyGuidance.js';
-import { roundHeadingDegrees } from '../data/headingDegrees.js';
 
 // Street Level UI state to panel strings and flags. Pure, so it is testable.
 
@@ -177,14 +169,11 @@ function presentViewer(state) {
   const right = [];
   if (street.isPano) right.push('360°');
   if (Number.isFinite(street.bearing))
-    right.push(`${roundHeadingDegrees(street.bearing)}°`);
+    right.push(`${Math.round(street.bearing)}°`);
   if (street.capturedAt)
     right.push(formatDate(street.capturedAt, street.capturedAtPrecision));
   const left = [];
-  // A provider address mixes Latin and the page language ("602 Congress Ave,
-  // أوستن"); each part is isolated so a house number stays with its street
-  // in right-to-left text. A no-op in left-to-right languages.
-  if (street.title) left.push(street.title.split(', ').map(isolate).join(', '));
+  if (street.title) left.push(street.title);
   if (street.creator)
     left.push(t('Image by {creator}', { creator: street.creator }));
   if (street.license) left.push(street.license);
@@ -199,6 +188,18 @@ function presentViewer(state) {
     linkLabel: street.providerLabel
       ? `${translateKnown(street.providerLabel)} ↗`
       : '',
+    follow: {
+      pressed: street.follow === true,
+      disabled: street.open !== true || street.followAvailable !== true,
+      title:
+        street.followAvailable === true
+          ? t(
+              'Camera follows view: move the globe camera wherever the street-level view looks',
+            )
+          : t(
+              'Camera follow needs the Google 3D map: choose Google 3D under MAP SOURCE',
+            ),
+    },
   };
 }
 
@@ -240,16 +241,8 @@ function translateHint(hint) {
 }
 
 function presentMeta(state) {
-  const providers = state.providers || [];
-  if (providers.length === 0) return translateHint(state.coverage.hint);
-  if (!state.enabled) return t('Switch Street Level on to draw its coverage.');
-  // A lit source that cannot run on this map is not listed: the core's hint
-  // says which map it needs.
-  if (!providers.some((p) => p.on))
-    return (
-      translateHint(state.coverage.hint) ||
-      t('Every provider is switched off: light a chip to draw its coverage.')
-    );
+  if (state.providers.length === 0) return translateHint(state.coverage.hint);
+  if (!state.enabled) return t('Switch a provider on to draw its coverage.');
   // Key-gated with another source ready: say how to use it.
   if (state.keyRequired && state.keyAlternatives?.length)
     return keyGuidance(state);
@@ -267,14 +260,7 @@ function presentMeta(state) {
     const countLine = coverageCountLine(state.coverage);
     return [countLine, hint].filter(Boolean).join(' · ');
   }
-  if (hint) return hint;
-  // Still loading, or the error line already says why.
-  if (state.coverage.loading || state.keyRequired || state.coverage.error)
-    return '';
-  const filter = state.filter || {};
-  return (filter.pano || 'all') !== 'all' || Number(filter.sinceDays) > 0
-    ? t('No sequences in view match the filter')
-    : t('No coverage in view');
+  return hint;
 }
 
 /**
@@ -312,23 +298,22 @@ function coverageCountLine(coverage) {
 
 /** @param {{now?: number}} [options] Clock for the SINCE readout. */
 export function presentStreetLevelPanel(state, { now = Date.now() } = {}) {
+  const enabled = state.enabled === true;
   const keyRequired = state.keyRequired === true;
   const filter = state.filter || { pano: 'all', sinceDays: 0 };
-  // A missing key says how to add it; a rejected key's own error names the fix.
+  // A missing key is already shown by the status and chip tooltip; only a
+  // rejected key keeps its error line, since that message names the fix.
   const keyMissing = keyRequired && state.keyRejected !== true;
   return {
-    enabled: state.enabled === true,
+    enabled,
     keyRequired,
     status: presentStatus(state),
-    controlsDisabled: keyRequired || (state.providers || []).length === 0,
+    controlsDisabled: keyRequired || state.providers.length === 0,
     providers: presentProviders(state),
     error: keyMissing
-      ? keyGuidance(state) || null
+      ? null
       : translateStreetLevelError(
-          state.street.error ||
-            state.sequence.error ||
-            state.coverage.error ||
-            '',
+          state.street.error || state.coverage.error || '',
         ) || null,
     filter: { pano: filter.pano, sinceDays: Number(filter.sinceDays) || 0 },
     filterControls: {
@@ -337,8 +322,10 @@ export function presentStreetLevelPanel(state, { now = Date.now() } = {}) {
     },
     since: presentSince(filter.sinceDays, now),
     sinceNote: state.sinceNote || null,
+    legend: state.legend || [],
     viewer: presentViewer(state),
     meta: presentMeta(state),
     nearest: presentNearest(state),
+    wantsOpen: state.street.open === true,
   };
 }

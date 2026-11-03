@@ -86,9 +86,6 @@ export async function _restoreContextSession({
         throw error;
       }
     }
-    // Clear All may have run while Contacts settled. It owns the selection
-    // now, so the snapshot must not come back behind it.
-    if (restoreState.cancelled) return;
     await this._dataManager.restoreEnabledLayerIds(
       restoreState.enabledLayerIds,
       {

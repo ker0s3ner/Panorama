@@ -8,13 +8,6 @@ import { formatNumber, getLocale, t } from './i18n/index.js';
 import { unitLabel } from './ui/unitLabels.js';
 import { localizePlaceName } from './ui/placeNames.js';
 
-/**
- * Scripts without letter case keep a space before the unit: `13 km` in
- * Chinese and Japanese, `13 كم` in Arabic, which would otherwise run the
- * digits into the word.
- */
-const UNCASED_UNITS = /^(?:zh|ja|ar)(?:-|$)/;
-
 /** An upper-case HUD quantity such as `13KM` / `13КМ`, in the active language. */
 export function hudQuantity(value, unit, digits = 0) {
   const number = formatNumber(value, {
@@ -22,10 +15,7 @@ export function hudQuantity(value, unit, digits = 0) {
     minimumFractionDigits: digits,
     maximumFractionDigits: digits,
   });
-  const label = unitLabel(unit);
-  if (UNCASED_UNITS.test(getLocale()))
-    return label ? `${number} ${label}` : number;
-  return `${number}${label.toUpperCase()}`;
+  return `${number}${unitLabel(unit).toUpperCase()}`;
 }
 
 /** One hemisphere-tagged coordinate, e.g. `21.33N` / `21,33С`. */
@@ -45,16 +35,7 @@ export const LOCALIZED_LOCALITY = Object.freeze({
     }),
   sector: ({ latDeg, lonDeg }) =>
     t('SECTOR {lat} {lon}', {
-      // Hemisphere letters, not compass words: 21.33N, never 21.33北.
-      lat: hudCoordinate(
-        latDeg,
-        t('N', { context: 'hemisphere' }),
-        t('S', { context: 'hemisphere' }),
-      ),
-      lon: hudCoordinate(
-        lonDeg,
-        t('E', { context: 'hemisphere' }),
-        t('W', { context: 'hemisphere' }),
-      ),
+      lat: hudCoordinate(latDeg, t('N'), t('S')),
+      lon: hudCoordinate(lonDeg, t('E'), t('W')),
     }),
 });

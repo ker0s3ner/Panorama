@@ -19,24 +19,15 @@ import { createWeatherSource } from '../layers/weather/source.js';
 import { createCycloneSource } from '../layers/cyclones/source.js';
 import { createWindSource } from '../layers/wind/source.js';
 import { createFirmsSource } from '../layers/firms/source.js';
-import { createGhostMapsSource } from '../layers/ghostMaps/source.js';
 import { createMapillarySource } from '../layers/streetLevel/providers/mapillary/source.js';
 import { createReferenceSources } from '../sources/reference.js';
 export { createReferenceSources as createStandaloneReferenceSources } from '../sources/reference.js';
 
 /** Select standalone providers without starting their acquisition. */
-export function createStandaloneLayerSources(
-  overrides = {},
-  { createMapTiles = createOpenFreeMapSource } = {},
-) {
+export function createStandaloneLayerSources(overrides = {}) {
   if (!overrides || typeof overrides !== 'object' || Array.isArray(overrides))
     throw new TypeError('Source overrides must be an object');
-  const trafficTiles = createMapTiles({
-    selectDecoded: ({ roads }) => ({ roads }),
-  });
-  const installationTiles = createMapTiles({
-    selectDecoded: ({ military }) => ({ military }),
-  });
+  const mapTiles = createOpenFreeMapSource();
   const defaults = {
     ...createReferenceSources(),
     directions: createDirectionsSource(),
@@ -51,15 +42,14 @@ export function createStandaloneLayerSources(
     }),
     cctv: createCctvSource(),
     radio: createRadioSource(),
-    traffic: createTrafficSource({ mapTiles: trafficTiles }),
+    traffic: createTrafficSource({ mapTiles }),
     transit: createTransitSource(),
     bikeshare: createBikeshareSource(),
-    installations: createInstallationSource({ mapTiles: installationTiles }),
+    installations: createInstallationSource({ mapTiles }),
     satellites: createSatelliteSource(),
     launches: createLaunchSource(),
     alpr: createAlprTileSource(),
     firms: createFirmsSource(),
-    's2-ghostmaps': createGhostMapsSource(),
     wind: createWindSource(),
     weather: createWeatherSource(),
     cyclones: createCycloneSource(),

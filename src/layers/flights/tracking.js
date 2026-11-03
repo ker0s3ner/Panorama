@@ -24,7 +24,6 @@ import {
   TRAIL_COLOR,
   CYAN_TRANSPARENT,
 } from './policy.js';
-import { roundHeadingDegrees } from '../../data/headingDegrees.js';
 
 export function createTracking({
   flightState,
@@ -48,7 +47,7 @@ export function createTracking({
   const { isMilitaryLayerActive, isMilitaryIcao } = services.militaryRegistry;
   const { trackedLabelModelFromText, refreshTrackedReadout } = services.readout;
   const { applyTrackedCameraFrame } = services.camera;
-  const { resolvePickId, isOwnedByOtherLayer, pickContact } = services.picking;
+  const { resolvePickId, isOwnedByOtherLayer } = services.picking;
   const flightsLayer = layer;
 
   function _emitAwarenessEvent(type, detail) {
@@ -127,7 +126,7 @@ export function createTracking({
           ? `${Math.round(described.velocityMps * 1.944)} kt`
           : '',
         heading: Number.isFinite(described.track)
-          ? `${roundHeadingDegrees(described.track)}°`
+          ? `${Math.round(described.track)}°`
           : '',
         route: route || '',
         icao24,
@@ -1175,9 +1174,7 @@ export function createTracking({
       // first-person reference. A globe click must not fall through to the
       // normal empty-space deselection path; cockpit has explicit exit controls.
       if (document.body.classList.contains('cockpit-mode')) return;
-      const picked = pickContact
-        ? pickContact(viewer.scene, click.position)
-        : viewer.scene.pick(click.position);
+      const picked = viewer.scene.pick(click.position);
 
       if (picked) {
         // Clicking the tracked entity itself — ignore (don't deselect)

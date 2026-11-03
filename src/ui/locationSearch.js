@@ -4,7 +4,6 @@ import { createStateChannel } from '../app/stateChannel.js';
 export class LocationSearch {
   constructor({
     input,
-    setSearching = () => {},
     begin,
     isCurrent,
     beforeFly,
@@ -17,7 +16,6 @@ export class LocationSearch {
   }) {
     Object.assign(this, {
       input,
-      setSearching,
       begin,
       isCurrent,
       beforeFly,
@@ -53,8 +51,8 @@ export class LocationSearch {
     if (!query || this.destroyed) return;
     const authority = this.begin();
     if (authority === false) {
-      this.setSearching(false);
-      this.input?.blur();
+      this.input.classList.remove('searching');
+      this.input.blur();
       return;
     }
     this.controller?.abort();
@@ -83,7 +81,7 @@ export class LocationSearch {
     try {
       this.onStart?.(authority);
       if (!current() || controller.signal.aborted) return;
-      this.setSearching(true);
+      this.input.classList.add('searching');
       this.channel.publish(change('started'));
       if (!current() || controller.signal.aborted) return;
       const destination = await this.search(query, {

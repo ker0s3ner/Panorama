@@ -1,5 +1,5 @@
 import { locationMiniStatus } from '../locationStatus.js';
-import { onLocaleChange, t } from '../i18n/index.js';
+import { t } from '../i18n/index.js';
 import { localizePlaceName } from './placeNames.js';
 
 const POI_KEYS = ['Q', 'W', 'E', 'R', 'T'];
@@ -13,16 +13,7 @@ const LOCATION_MINI_SEARCHED_PLACEHOLDER = Object.freeze(
   locationMiniStatus({ searchedLabel: '·' }),
 );
 
-/**
- * The location tray's presentation, keyboard handling and pending row
- * animation over supplied actions. The city pills, the landmark row, the
- * mini status, the search error and the ORBIT indicator are presented as a
- * plain view and handed to `publish`; Core's dock renders them and calls
- * `chooseCity()` and `choosePoi()`, and the scene chrome shows the indicator.
- * The globe actions and the cockpit call `reset()`. The search field's open
- * and searching state is presented too, and the dock's toggle calls
- * `toggleSearch()`; the field keeps its own key, input and blur listeners.
- */
+/** Location DOM, keyboard handling and pending row animation over supplied actions. */
 export class LocationControls {
   constructor({
     elements,
@@ -31,10 +22,7 @@ export class LocationControls {
     onCity,
     onPoi,
     onSearch,
-    onSearchEdit,
     onReset,
-    searchExpanded = false,
-    publish = () => {},
     doc = document,
     requestFrame = (callback) => requestAnimationFrame(callback),
     cancelFrame = (id) => cancelAnimationFrame(id),
@@ -47,39 +35,25 @@ export class LocationControls {
       onPoi,
       onSearch,
       onReset,
-      publish,
       doc,
       requestFrame,
       cancelFrame,
     });
     this.removers = [];
+    this.poiRemovers = [];
     this.frame = null;
     this.destroyed = false;
-    // City names and the status lines are translated here; show them again
-    // in a new locale.
-    this.removers.push(
-      onLocaleChange(() => {
-        if (this._statusRecord !== undefined)
-          this.renderStatus(this._statusRecord);
-        else this.present();
-      }),
-    );
     this.rowGeneration = 0;
-    this.activeCity = null;
-    this.poiCity = null;
-    this.activePoi = null;
-    this.poisExpanded = false;
-    this.status = {
-      city: t('📍 Location: --'),
-      poi: t('Landmark: --'),
-    };
-    this.searchError = null;
-    // The search field: whether it is open, and whether a lookup runs.
-    this.searchExpanded = Boolean(searchExpanded);
-    this.searching = false;
-    // The ORBIT indicator: null until the shell offers it, then whether the
-    // camera orbits.
-    this.orbit = null;
+    elements.pills.replaceChildren();
+    for (const [id, city] of Object.entries(cities)) {
+      const pill = doc.createElement('button');
+      pill.type = 'button';
+      pill.className = 'location-pill';
+      pill.dataset.locationId = id;
+      pill.textContent = localizePlaceName(city.name);
+      this.bind(pill, 'click', () => onCity(id));
+      elements.pills.appendChild(pill);
+    }
     this.bind(doc, 'keydown', (event) => {
       const cityId = getExpandedCity();
       if (
@@ -92,15 +66,16 @@ export class LocationControls {
       if (index !== -1 && index < (cities[cityId]?.pois.length || 0))
         onPoi(cityId, index);
     });
+    this.bind(elements.searchToggle, 'click', () => {
+      elements.search.classList.toggle('expanded');
+      if (elements.search.classList.contains('expanded'))
+        elements.search.focus();
+    });
     this.bind(elements.search, 'keydown', (event) => {
       if (event.key === 'Enter') void onSearch(elements.search.value);
     });
-    // Typing corrects a failed query; closing the field (which empties it) drops its error.
-    this.bind(elements.search, 'input', () => onSearchEdit?.());
-    this.bind(elements.search, 'blur', () => {
-      if (!elements.search.value) onSearchEdit?.();
-    });
-    this.present();
+    for (const button of elements.resetButtons)
+      this.bind(button, 'click', onReset);
   }
   bind(element, event, handler, removers = this.removers) {
     if (!element) return;
@@ -109,47 +84,6 @@ export class LocationControls {
     };
     element.addEventListener(event, listener);
     removers.push(() => element.removeEventListener(event, listener));
-  }
-  /** Publish the tray as it stands. */
-  present() {
-    if (!this.destroyed) this.publish(this.presentation());
-  }
-  /** The tray as it stands. */
-  presentation() {
-    const pois = this.cities[this.poiCity]?.pois || [];
-    return {
-      cities: Object.entries(this.cities).map(([id, city]) => ({
-        id,
-        label: localizePlaceName(city.name),
-        active: id === this.activeCity,
-      })),
-      poiCity: this.poiCity,
-      pois: pois.map((poi, index) => ({
-        index,
-        key: String(POI_KEYS[index] || index + 1),
-        name: String(poi.name ?? ''),
-        active: index === this.activePoi,
-      })),
-      poisExpanded: this.poisExpanded,
-      status: { ...this.status },
-      searchError: this.searchError,
-      searchExpanded: this.searchExpanded,
-      searching: this.searching,
-      orbit: this.orbit && { ...this.orbit },
-    };
-  }
-  /** A city pill was clicked. */
-  chooseCity(id) {
-    if (!this.destroyed) this.onCity(id);
-  }
-  /** A reset to the full globe view was asked for. */
-  reset() {
-    if (!this.destroyed) return this.onReset();
-  }
-  /** A landmark pill of the shown city was clicked. */
-  choosePoi(index) {
-    if (!this.destroyed && this.poiCity !== null)
-      this.onPoi(this.poiCity, index);
   }
   cancelExpansion() {
     this.rowGeneration++;
@@ -162,36 +96,54 @@ export class LocationControls {
     if (!city) return;
     this.cancelExpansion();
     const generation = this.rowGeneration;
-    this.poiCity = cityId;
-    this.activePoi = null;
-    this.present();
-    // The row expands a frame after its pills render, so the transition runs.
+    for (const remove of this.poiRemovers.splice(0)) remove();
+    this.elements.poiRow.replaceChildren();
+    city.pois.forEach((poi, index) => {
+      const pill = this.doc.createElement('button');
+      pill.type = 'button';
+      pill.className = 'poi-pill';
+      pill.dataset.poiIndex = index;
+      const key = this.doc.createElement('span');
+      key.className = 'poi-pill-key';
+      key.textContent = POI_KEYS[index] || index + 1;
+      const label = this.doc.createElement('span');
+      label.className = 'poi-pill-name';
+      label.textContent = poi.name;
+      pill.append(key, label);
+      this.bind(
+        pill,
+        'click',
+        () => this.onPoi(cityId, index),
+        this.poiRemovers,
+      );
+      this.elements.poiRow.appendChild(pill);
+    });
     this.frame = this.requestFrame(() => {
       if (this.destroyed || generation !== this.rowGeneration) return;
       this.frame = null;
-      this.poisExpanded = true;
-      this.present();
+      this.elements.poiRow.classList.add('expanded');
+      this.elements.divider.classList.add('visible');
     });
   }
   hidePois() {
     if (this.destroyed) return;
     this.cancelExpansion();
-    this.poisExpanded = false;
-    this.present();
+    this.elements.poiRow.classList.remove('expanded');
+    this.elements.divider.classList.remove('visible');
   }
   highlightPoi(index) {
     if (this.destroyed) return;
-    this.activePoi = index;
-    this.present();
+    for (const pill of this.elements.poiRow.querySelectorAll('.poi-pill'))
+      pill.classList.toggle('active', Number(pill.dataset.poiIndex) === index);
   }
   highlightCity(id) {
     if (this.destroyed) return;
-    this.activeCity = id;
-    this.present();
+    for (const pill of this.elements.pills.querySelectorAll('.location-pill'))
+      pill.classList.toggle('active', pill.dataset.locationId === id);
   }
   renderStatus(record) {
-    if (this.destroyed) return;
-    this._statusRecord = record;
+    if (this.destroyed || !this.elements.statusCity || !this.elements.statusPoi)
+      return;
     // A preset city shows its name in the UI language; the record stays English.
     const state = record?.city?.name
       ? {
@@ -200,78 +152,40 @@ export class LocationControls {
         }
       : record;
     const lines = locationMiniStatus(state);
-    this.status = {
-      city:
-        lines.city === LOCATION_MINI_EMPTY.city
-          ? t('📍 Location: --')
-          : lines.city,
-      poi:
-        lines.poi === LOCATION_MINI_EMPTY.poi
-          ? t('Landmark: --')
-          : lines.poi === LOCATION_MINI_SEARCHED_PLACEHOLDER.poi
-            ? t('Searched location')
-            : lines.poi,
-    };
-    this.present();
-  }
-  /** Show, or with null clear, the announced error under the search field. */
-  setSearchError(message) {
-    if (this.destroyed) return;
-    this.searchError = message || null;
-    this.present();
-  }
-  /** The search toggle was clicked: open the field and focus it, or close it. */
-  toggleSearch() {
-    if (this.destroyed) return;
-    this.searchExpanded = !this.searchExpanded;
-    this.present();
-    if (this.searchExpanded) this.elements.search?.focus();
-  }
-  /** Mark the search field while a lookup runs. */
-  setSearching(active) {
-    if (this.destroyed) return;
-    this.searching = Boolean(active);
-    this.present();
-  }
-  /**
-   * A lookup settled. One that found nothing keeps its query, the open field
-   * and focus so it can be corrected; any other clears and closes the field.
-   */
-  settleSearch({ keepQuery = false } = {}) {
-    if (this.destroyed) return;
-    this.searching = false;
-    if (!keepQuery) {
-      this.closeSearch();
-      return;
+    this.elements.statusCity.textContent =
+      lines.city === LOCATION_MINI_EMPTY.city
+        ? t('📍 Location: --')
+        : lines.city;
+    if (lines.poi === LOCATION_MINI_EMPTY.poi) {
+      this.elements.statusPoi.textContent = t('Landmark: --');
+    } else if (lines.poi === LOCATION_MINI_SEARCHED_PLACEHOLDER.poi) {
+      this.elements.statusPoi.textContent = t('Searched location');
+    } else {
+      this.elements.statusPoi.textContent = lines.poi;
     }
-    this.present();
-    this.elements.search?.focus();
-    this.elements.search?.select?.();
   }
-  /** Close the search field and drop its query. */
-  closeSearch() {
-    if (this.destroyed) return;
-    this.searchExpanded = false;
-    this.present();
-    const field = this.elements.search;
-    if (field) field.value = '';
-    field?.blur?.();
-  }
-  /** Offer the ORBIT indicator, lit while the camera orbits. */
-  showOrbit(active = false) {
-    if (this.destroyed) return;
-    this.orbit = { active: Boolean(active) };
-    this.present();
+  createOrbitIndicator() {
+    if (this.destroyed) return null;
+    if (!this.orbitIndicator) {
+      this.orbitIndicator = this.doc.createElement('div');
+      this.orbitIndicator.id = 'orbit-indicator';
+      const icon = this.doc.createElement('span');
+      icon.className = 'orbit-icon';
+      icon.textContent = '↻';
+      this.orbitIndicator.append(icon, ` ${t('ORBIT')}`);
+      this.doc.body.appendChild(this.orbitIndicator);
+    }
+    return this.orbitIndicator;
   }
   destroy() {
     if (this.destroyed) return;
     this.destroyed = true;
     this.cancelExpansion();
-    for (const remove of this.removers.splice(0)) remove();
-    // The ORBIT indicator leaves with its owner.
-    if (this.orbit) {
-      this.orbit = null;
-      this.publish(this.presentation());
-    }
+    for (const remove of [
+      ...this.poiRemovers.splice(0),
+      ...this.removers.splice(0),
+    ])
+      remove();
+    this.orbitIndicator?.remove();
   }
 }
