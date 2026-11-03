@@ -58,21 +58,41 @@ export function _renderCctvState(state) {
   }
 
   if (this._cctvSelect) {
-    const shouldRebuild =
-      this._cctvSelect.options.length !== cameras.length ||
-      cameras.some(
-        (cam, idx) => this._cctvSelect.options[idx]?.value !== cam.id,
+    const sortedCameras = [...cameras].sort((a, b) => {
+      const country = String(a.country || 'Global').localeCompare(
+        String(b.country || 'Global'),
       );
+      if (country) return country;
+      const city = String(a.city || '').localeCompare(String(b.city || ''));
+      if (city) return city;
+      return String(a.name || a.id).localeCompare(String(b.name || a.id));
+    });
+    const optionSignature = sortedCameras
+      .map((camera) => `${camera.country || ''}|${camera.city || ''}|${camera.id}`)
+      .join('\n');
+    const shouldRebuild = this._cctvSelect.dataset.optionSignature !== optionSignature;
     if (shouldRebuild) {
+      const countryCounts = new Map();
+      for (const camera of sortedCameras) {
+        const country = String(camera.country || 'Global');
+        countryCounts.set(country, (countryCounts.get(country) || 0) + 1);
+      }
       this._cctvSelect.innerHTML = '';
-      for (const camera of cameras) {
+      this._cctvSelect.dataset.optionSignature = optionSignature;
+      let group;
+      let groupKey = '';
+      for (const camera of sortedCameras) {
+        const country = String(camera.country || 'Global');
+        if (country !== groupKey) {
+          groupKey = country;
+          group = document.createElement('optgroup');
+          group.label = `${country} · ${countryCounts.get(country)}`;
+          this._cctvSelect.appendChild(group);
+        }
         const option = document.createElement('option');
         option.value = camera.id;
-        const location = [camera.country, camera.city]
-          .filter(Boolean)
-          .join(' · ');
-        option.textContent = `${location || 'Global'} · ${camera.name}`;
-        this._cctvSelect.appendChild(option);
+        option.textContent = `${camera.city || 'Region'} · ${camera.name}`;
+        group.appendChild(option);
       }
     }
     this._cctvSelect.disabled = !enabled || cameras.length === 0;
