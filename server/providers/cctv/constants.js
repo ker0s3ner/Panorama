@@ -18,7 +18,7 @@ export const CCTV_MAX_SOURCES_CEILING = 5000;
 export const AUSTIN_DOWNTOWN = { lat: 30.2672, lon: -97.7431 };
 /** Caltrans CCTV: one JSON feed per district, identical schema statewide. */
 /** TxDOT ITS: one keyless JSON catalog per district (25 districts statewide). */
-export const TXDOT_ORIGIN = 'https://its.txdot.gov';
+const TXDOT_ORIGIN = 'https://its.txdot.gov';
 export const TXDOT_CCTV_STATUS_URL = (district) =>
   `${TXDOT_ORIGIN}/its/DistrictIts/GetCctvStatusListByDistrict?districtCode=${encodeURIComponent(district)}`;
 /** Per-camera frame. Returns JSON `{snippet:<base64 jpeg>}`, not an image body;
@@ -58,7 +58,7 @@ export const TXDOT_DISTRICTS = new Set([
  * CCTV_TXDOT_DISTRICTS opens up the rest ("AUS,SAT,HOU,DAL,FTW" for the five
  * big metros, or any of the 25 codes). */
 export const DEFAULT_TXDOT_DISTRICTS = 'AUS,SAT';
-export const DEFAULT_TXDOT_MAX_SOURCES = 800;
+export const DEFAULT_TXDOT_MAX_SOURCES = 500;
 /** Prioritization anchors: downtown cores of the metro districts a user can
  * select. Cameras rank by distance to the NEAREST anchor, so a widened
  * CCTV_TXDOT_DISTRICTS still ranks sensibly instead of against Austin alone. */
@@ -105,7 +105,7 @@ export const CALTRANS_CCTV_URL = (district) =>
   `https://cwwp2.dot.ca.gov/data/d${district}/cctv/cctvStatusD${String(district).padStart(2, '0')}.json`;
 /** Districts fetched by default: SF Bay (4), LA (7), San Diego (11), Sacramento (3). */
 export const DEFAULT_CALTRANS_DISTRICTS = '4,7,11,3';
-export const DEFAULT_CALTRANS_MAX_SOURCES = 600;
+export const DEFAULT_CALTRANS_MAX_SOURCES = 300;
 /** Prioritization anchors: downtown cores of the four default metros. */
 export const CALTRANS_ANCHORS = [
   { lat: 37.7793, lon: -122.4193 }, // San Francisco
@@ -113,13 +113,34 @@ export const CALTRANS_ANCHORS = [
   { lat: 32.7157, lon: -117.1611 }, // San Diego
   { lat: 38.5816, lon: -121.4944 }, // Sacramento
 ];
+export const FLORIDA_CCTV_URL =
+  'https://services.arcgis.com/3wFbqsFPLeKqOlIK/arcgis/rest/services/FL511_Traffic_Cameras/FeatureServer/0/query';
+export const FLORIDA_IMAGE_HOSTS = [
+  'images-dis.divas.cloud',
+  'snapshots.divas.cloud',
+];
+export const DEFAULT_FLORIDA_MAX_SOURCES = 500;
+/** Byte cap per catalog page (2,000 rows, about 650 KiB measured). */
+export const FLORIDA_MAX_CATALOG_BYTES = 2 * 1024 * 1024;
+/** Catalog page ceiling: 40 pages covers 4,000+ cameras even at 100 rows a page. */
+export const FLORIDA_MAX_CATALOG_PAGES = 40;
+export const FLORIDA_ANCHORS = [
+  { lat: 25.7617, lon: -80.1918 }, // Miami
+  { lat: 28.5384, lon: -81.3789 }, // Orlando
+  { lat: 27.9506, lon: -82.4572 }, // Tampa
+  { lat: 30.3322, lon: -81.6557 }, // Jacksonville
+  { lat: 30.4383, lon: -84.2807 }, // Tallahassee
+  { lat: 26.1224, lon: -80.1373 }, // Fort Lauderdale
+  { lat: 26.7153, lon: -80.0534 }, // West Palm Beach
+  { lat: 30.4213, lon: -87.2169 }, // Pensacola (panhandle)
+];
 /** TfL JamCams: one keyless list endpoint; frames live on a public S3 bucket. */
 export const TFL_JAMCAM_URL = 'https://api.tfl.gov.uk/Place/Type/JamCam';
 export const TFL_IMAGE_ORIGIN =
   'https://s3-eu-west-1.amazonaws.com/jamcams.tfl.gov.uk/';
-export const DEFAULT_TFL_MAX_SOURCES = 600;
+export const DEFAULT_TFL_MAX_SOURCES = 250;
 export const LONDON_CENTER = { lat: 51.5074, lon: -0.1278 };
-/** Ontario 511: keyless CARS/511 camera catalog; frame URLs are still images. */
+/** Ontario 511: CARS/511 camera catalog, which needs a developer key (ONTARIO_511_API_KEY); frame URLs are still images. */
 export const ONTARIO_511_CAMERAS_URL =
   'https://511on.ca/api/v2/get/cameras?format=json&lang=en';
 export const ONTARIO_511_IMAGE_ORIGIN = 'https://511on.ca/map/Cctv/';
@@ -143,7 +164,7 @@ export const FINTRAFFIC_STATIONS_URL =
 export const FINTRAFFIC_IMAGE_ORIGIN = 'https://weathercam.digitraffic.fi/';
 /** Digitraffic asks every client to identify itself on API calls. */
 export const DIGITRAFFIC_USER = 'gods-eye-view';
-export const DEFAULT_FINTRAFFIC_MAX_SOURCES = 600;
+export const DEFAULT_FINTRAFFIC_MAX_SOURCES = 300;
 /** Ground-elevation prior, in metres, for stations that report no altitude.
  * 228 of 809 stations carry a real metre value (median 94 m); the rest report
  * 0, which means "not reported" rather than sea level — Kouvola (~80 m of real
@@ -170,7 +191,7 @@ export const FINLAND_ANCHORS = [
 export const DRIVEBC_WEBCAMS_URL = 'https://www.drivebc.ca/api/webcams/';
 export const DRIVEBC_IMAGE_URL = (id) =>
   `https://www.drivebc.ca/images/${id}.jpg`;
-export const DEFAULT_DRIVEBC_MAX_SOURCES = 400;
+export const DEFAULT_DRIVEBC_MAX_SOURCES = 250;
 /** Prioritization anchors: downtown Vancouver and Victoria. */
 export const DRIVEBC_ANCHORS = [
   { lat: 49.2827, lon: -123.1207 }, // Vancouver
@@ -188,6 +209,8 @@ export const TARKTEE_IMAGES_URL =
   'https://tarktee.transpordiamet.ee/api/v1/datex/roadCameraImages';
 export const TARKTEE_IMAGE_ORIGIN = 'https://tarktee.transpordiamet.ee/images/';
 export const DEFAULT_TARKTEE_MAX_SOURCES = 179;
+/** Hard ceiling per Tarktee DATEX XML document (~120–165 KB live). */
+export const TARKTEE_MAX_CATALOG_BYTES = 4 * 1024 * 1024;
 export const TARKTEE_ANCHORS = [
   { lat: 59.437, lon: 24.753 }, // Tallinn
   { lat: 58.378, lon: 26.729 }, // Tartu
@@ -205,7 +228,7 @@ export const WARENDORF_IMAGE_ORIGINS = Object.freeze([
 export const NSW_CAMERAS_URL =
   'https://data.livetraffic.com/cameras/traffic-cam.json';
 export const NSW_IMAGE_ORIGIN = 'https://webcams.transport.nsw.gov.au/';
-export const DEFAULT_NSW_MAX_SOURCES = 600;
+export const DEFAULT_NSW_MAX_SOURCES = 250;
 export const SYDNEY_CENTER = { lat: -33.8688, lon: 151.2093 };
 /**
  * The NSW webcam host answers non-browser clients with HTTP 200 and a short
@@ -228,7 +251,7 @@ export const DEFAULT_CALGARY_ROWS_URL =
  * most rows as `http://`; that host serves HTTPS and 301-redirects to it, so
  * URLs are upgraded and then pinned here before registration. */
 export const CALGARY_IMAGE_ORIGIN = 'https://trafficcam.calgary.ca/';
-export const DEFAULT_CALGARY_MAX_SOURCES = 300;
+export const DEFAULT_CALGARY_MAX_SOURCES = 220;
 /** Centre Street / 7 Avenue: the prioritization anchor. */
 export const CALGARY_DOWNTOWN = { lat: 51.0461, lon: -114.0626 };
 /** Hard ceiling on the Calgary catalog body. The whole city is ~215 rows and
@@ -286,6 +309,36 @@ export const CATALONIA_ANCHORS = [
   { lat: 41.5636, lon: 2.0111 }, // Terrassa
 ];
 
+/** Hong Kong Transport Department traffic snapshot cameras: keyless English
+ * locations XML on DATA.GOV.HK; frames are stills on the TD CCTV host. */
+export const DEFAULT_HK_CAMERAS_URL =
+  'https://static.data.gov.hk/td/traffic-snapshot-images/code/Traffic_Camera_Locations_En.xml';
+/** The only origin HK camera frames may come from. Verified 2026-10-11: still
+ * URLs answer 200 on this host with no redirect hop. */
+export const HK_IMAGE_ORIGIN = 'https://tdcctv.data.one.gov.hk/';
+/** Above the full TD English catalog (~1,013 cameras) so a default install
+ * keeps nearly all of them. Catalog-wide round-robin still applies when the
+ * sum of packs exceeds DEFAULT_CCTV_MAX_SOURCES (Norway-style). */
+export const DEFAULT_HK_MAX_SOURCES = 1100;
+/** Prioritization anchors across Hong Kong Island, Kowloon and the New
+ * Territories so a lowered cap keeps territory-wide coverage rather than
+ * only the harbour corridor. */
+export const HK_ANCHORS = [
+  { lat: 22.2819, lon: 114.158 }, // Central
+  { lat: 22.2976, lon: 114.1722 }, // Tsim Sha Tsui
+  { lat: 22.3827, lon: 114.19 }, // Sha Tin
+  { lat: 22.3701, lon: 114.114 }, // Tsuen Wan
+  { lat: 22.4503, lon: 114.1688 }, // Tai Po
+  { lat: 22.493, lon: 114.139 }, // Fanling
+  { lat: 22.391, lon: 113.977 }, // Tuen Mun
+  { lat: 22.4445, lon: 114.022 }, // Yuen Long
+  { lat: 22.307, lon: 114.26 }, // Tseung Kwan O
+];
+/** Hard ceiling on the locations XML body. The live English list is ~400 KB
+ * for ~1,000 cameras; this only exists so an unbounded upstream cannot be
+ * buffered without limit. */
+export const HK_MAX_CATALOG_BYTES = 4 * 1024 * 1024;
+
 /** Statens vegvesen (Norway) road cameras: the keyless OGC API Features view
  * of the official DATEX 3.1 CCTV site table, one GeoJSON request for the whole
  * country (~900 cameras). The raw DATEX node needs an account; this view does
@@ -317,6 +370,49 @@ export const NORWAY_ANCHORS = [
   { lat: 69.6492, lon: 18.9553 }, // Tromsø
 ];
 
+/** Kartverket's keyless point-height API (CC BY 4.0): terrain height above
+ * sea level (NN2000), used as the Vegvesen cameras' ground prior because the
+ * camera feed's points are 2D. */
+export const KARTVERKET_HEIGHT_URL =
+  'https://ws.geonorge.no/hoydedata/v1/punkt';
+/** Points per request. The API takes up to 50, but above ~20 it answers the
+ * extra points from contour lines (`hoydekurver`, metres to ~20 m off) or not
+ * at all; at 20 nearly every camera resolves from the 1 m terrain model. */
+export const KARTVERKET_MAX_POINTS = 20;
+/** Requests in flight at once. The whole country is ~36 requests of
+ * 0.6-9.5 s each, so a cold lookup takes ~6-13 s. */
+export const KARTVERKET_CONCURRENCY = 8;
+/** Deadline for one complete lookup, shared by every request. A lookup cut
+ * short by it is resumed on the next refresh, without a backoff. */
+export const KARTVERKET_LOOKUP_TIMEOUT_MS = 30 * 1000;
+/** One request that takes longer than this counts as a failing service. */
+export const KARTVERKET_REQUEST_TIMEOUT_MS = 10 * 1000;
+/** The Vegvesen lane's budget, measured from the start of the loader (catalog
+ * fetch included), for waiting on heights. Under the 15 s per-provider fetch
+ * timeout so this pack is never the catalog's slowest lane. A lookup still
+ * running after it keeps filling the cache for the next refresh. */
+export const KARTVERKET_CATALOG_WAIT_MS = 12 * 1000;
+/** The lane only waits when more than this share of its cameras has no
+ * answer yet (a cold cache). A few new cameras or expired misses are looked
+ * up in the background instead of holding the refresh. */
+export const KARTVERKET_WAIT_MISSING_SHARE = 0.1;
+/** A point Kartverket has no height for (some ferry quays and bridges) is not
+ * asked about again for this long. */
+export const KARTVERKET_NULL_TTL_MS = 6 * 60 * 60 * 1000;
+/** After a failing request (408, 429, 5xx, a network error, a request
+ * timeout or an unreadable body), no lookup starts for this long, or for the
+ * Retry-After the service sent, bounded to [1 min, 1 h]. Longer than the
+ * 15-minute catalog refresh (CCTV_SOURCE_CACHE_MS), so a failing service
+ * costs one attempt per backoff, not one per refresh. */
+export const KARTVERKET_FAILURE_BACKOFF_MS = 30 * 60 * 1000;
+export const KARTVERKET_MAX_BACKOFF_MS = 60 * 60 * 1000;
+export const KARTVERKET_MAX_RESPONSE_BYTES = 256 * 1024;
+/** Plausible Norwegian terrain: below sea level only at the shore, and no road
+ * camera sits above ~1,500 m. Anything outside is treated as no height. */
+export const KARTVERKET_HEIGHT_RANGE_M = Object.freeze({ min: -20, max: 2500 });
+/** Same identity the other CCTV upstream requests send. */
+export const KARTVERKET_USER_AGENT = 'gods-eye-view-cctv-proxy/1.0';
+
 /** NYC DOT Traffic Management Center cameras: one keyless JSON list for the
  * five boroughs (~980 cameras). Frames are stills synthesized from each
  * camera UUID on the city's webcam host — never taken from the payload. */
@@ -346,6 +442,39 @@ export const NYC_ANCHORS = [
   { lat: 40.8448, lon: -73.8648 }, // Bronx
   { lat: 40.5795, lon: -74.1502 }, // Staten Island
 ];
+
+/** Autostrada del Brennero (A22, Brenner–Modena) webcams: the keyless Open
+ * Data Hub (NOI Techpark, South Tyrol) tourism API republishes Autobrennero's
+ * own camera list with coordinates, one request for the whole motorway
+ * (13 cameras). Frames are stills on the operator's host, refreshed about
+ * once a minute. */
+export const DEFAULT_A22_CCTV_URL =
+  'https://tourism.api.opendatahub.com/v1/WebcamInfo?source=a22&pagesize=200&removenullvalues=true';
+/** The only origin A22 camera frames may come from: `km<N>.jpg` per camera. */
+export const A22_IMAGE_ORIGIN = 'https://www.autobrennero.it/WebCamImg/';
+/** Hard ceiling on the catalog body. The whole motorway is ~45 KB. */
+export const A22_MAX_CATALOG_BYTES = 2 * 1024 * 1024;
+/** Orthometric ground elevation (m) at each camera, keyed by its motorway
+ * kilometre, from the Copernicus GLO-90 DEM via Open-Meteo's elevation API.
+ * The feed's coordinates are 2D and the road climbs from the Po valley (~20 m)
+ * to the Brenner Pass (~1,370 m), so one flat prior would bury the Alpine
+ * cameras. A camera not listed here uses A22_DEFAULT_GROUND_ELEVATION_M. */
+export const A22_GROUND_ELEVATION_BY_KM = Object.freeze({
+  1: 1365,
+  68: 375,
+  77: 301,
+  100: 219,
+  129: 206,
+  138: 204,
+  159: 175,
+  205: 188,
+  228: 72,
+  240: 38,
+  272: 16,
+  285: 19,
+  313: 40,
+});
+export const A22_DEFAULT_GROUND_ELEVATION_M = 200;
 
 /** DelDOT CCTV: one keyless statewide JSON catalog; live video via RTMP-over-HTTP (rtmpt:80). */
 export const DELDOT_CCTV_URL = 'https://tmc.deldot.gov/json/videocamera.json';
@@ -439,6 +568,10 @@ export const CCTV_SOURCE_CACHE_MS = 15 * 60 * 1000;
  * pending forever — a hung fetch aborts, the loader returns [], and
  * serve-stale/other packs take over. */
 export const CCTV_SOURCE_FETCH_TIMEOUT_MS = 15 * 1000;
+/** Tarktee's two DATEX feeds (120 and 160 KB) answered in 2 to 16.6 s across
+ * ten requests on 2026-10-18, so the shared 15 s timeout dropped the Estonian
+ * pack on about a third of loads. Both must arrive for any camera to load. */
+export const TARKTEE_FETCH_TIMEOUT_MS = 30 * 1000;
 /** Individual CCTV image fetches must settle before the active 10-second
  * client refresh cadence. A bounded miss can fall through to Street View or
  * the synthetic frame instead of leaving the browser preview pending. */

@@ -14,40 +14,29 @@ import {
   HEAT_JAM_PULSE_ALPHA,
 } from './policy.js';
 
-// ─── Traffic signals ────────────────────────────────────────
-// Every road end is a junction with a fixed-time signal. Its phase comes from
-// the junction's position, so every dot arriving at the same junction sees the
-// same light, and cross streets alternate. Motorways have no signals.
-const SIGNAL_CYCLE_S = 72;
-const SIGNALISED = new Set(['trunk', 'primary', 'secondary', 'tertiary', 'residential', 'unclassified']);
-
-function junctionHash(p) {
-  const x = Math.round(p.x / 12);
-  const y = Math.round(p.y / 12);
-  const z = Math.round(p.z / 12);
-  let h = (x * 73856093) ^ (y * 19349663) ^ (z * 83492791);
-  h = (h ^ (h >>> 13)) >>> 0;
-  return h;
-}
-
-/** True while the approach is on red (or the all-red clearance interval). */
-function isRed(dot, atStart, nowMs) {
-  const end = atStart ? dot.waypoints[0] : dot.waypoints[dot.waypoints.length - 1];
-  const h = junctionHash(end);
-  const phase = ((nowMs / 1000 + (h % SIGNAL_CYCLE_S)) % SIGNAL_CYCLE_S) / SIGNAL_CYCLE_S;
-  // Two approach groups share the cycle; the road's own parity picks its slot.
-  const group = (dot.road?.coords?.length ?? 0) % 2;
-  const start = group === 0 ? 0 : 0.5;
-  const rel = (phase - start + 1) % 1;
-  return rel > 0.42; // green ~42 %, the rest red/clearance for this approach
-}
-
 export function createAnimation({
   state: layerState,
   services,
   parts,
   source,
 }) {
+  function syncRenderDemand() {
+    const needed = Boolean(
+      layerState._enabled &&
+      (layerState._dots.length || layerState._heatJamPrim),
+    );
+    // Height easing only runs in a held frame. Settle it before releasing, so
+    // a population emptied mid-correction cannot report loading forever.
+    if (!needed && layerState._heightPending) parts.retention.finishHeights();
+    if (needed === Boolean(layerState._renderHeld)) return;
+    layerState._renderHeld = needed;
+    if (needed) {
+      layerState._lastAnimTime = 0;
+      services.render.holdContinuousRender('traffic');
+      layerState._viewer?.scene?.requestRender?.();
+    } else services.render.releaseContinuousRender('traffic');
+  }
+
   /**
    * Spawn animated dot primitives along a single road.
    *
@@ -216,6 +205,7 @@ export function createAnimation({
             : null,
       });
     }
+    syncRenderDemand();
   }
 
   /**
@@ -234,6 +224,8 @@ export function createAnimation({
    */
 
   function animate() {
+    syncRenderDemand();
+    if (!layerState._renderHeld) return;
     const now = Date.now();
     // Delta time in seconds, capped to avoid jumps when returning from background tab
     const dt = layerState._lastAnimTime
@@ -279,17 +271,6 @@ export function createAnimation({
       // alternate short forward bursts with stops. The burst multiplier keeps
       // the long-run average near the honest TomTom crawl speed.
       let burst = now < dot.stoppedUntil ? 0 : 1;
-      // Signalised junction ahead: queue at a stop line while the light is red.
-      if (
-        Number.isFinite(remaining) &&
-        SIGNALISED.has(dot.road?.type) &&
-        layerState._signals !== false
-      ) {
-        const stopLine = 7 + (dot.id % 8) * 5.5; // staggered so a queue builds
-        if (remaining <= stopLine && remaining > stopLine * 0.45 && isRed(dot, dot.direction < 0, now)) {
-          burst = 0;
-        }
-      }
       if (dot.creep) {
         if (now >= dot.creep.until) {
           dot.creep.moving = !dot.creep.moving;
@@ -357,7 +338,7 @@ export function createAnimation({
 
   function maybeStopLight(dot, now) {
     const nearEnd = dot.segIdx <= 1 || dot.segIdx >= dot.numSegments - 2;
-    if (nearEnd && Math.random() < 0.002) {
+    if (nearEnd && Math.random() < 0.008) {
       // Pause for 2–6 seconds
       dot.stoppedUntil = now + 2000 + Math.random() * 4000;
     }
@@ -378,6 +359,13 @@ export function createAnimation({
     layerState._count = 0;
     layerState._bucketCounts = { free: 0, slow: 0, jam: 0, sim: 0 };
     layerState._closedRoads = 0;
+    syncRenderDemand();
   }
-  return { spawnDotsForRoad, animate, maybeStopLight, clearDots };
+  return {
+    spawnDotsForRoad,
+    animate,
+    maybeStopLight,
+    clearDots,
+    syncRenderDemand,
+  };
 }

@@ -17,14 +17,14 @@
   letter-spacing: 0.09rem;
   background: linear-gradient(
     145deg,
-    rgba(18, 22, 27, 0.92),
-    rgba(18, 22, 27, 0.9)
+    rgba(10, 27, 37, 0.92),
+    rgba(7, 13, 22, 0.9)
   );
-  border: 1px solid rgba(76, 144, 240, 0.38);
+  border: 1px solid rgba(54, 220, 255, 0.38);
   border-radius: 0.42rem;
   box-shadow:
     0 0.4rem 1.6rem rgba(0, 0, 0, 0.5),
-    0 0 1.2rem rgba(76, 144, 240, 0.07);
+    0 0 1.2rem rgba(0, 212, 255, 0.07);
   backdrop-filter: blur(18px) saturate(1.2);
   -webkit-backdrop-filter: blur(18px) saturate(1.2);
   cursor: pointer;
@@ -39,15 +39,15 @@
   background: linear-gradient(
     145deg,
     rgba(14, 38, 51, 0.95),
-    rgba(18, 22, 27, 0.93)
+    rgba(9, 18, 28, 0.93)
   );
-  border-color: rgba(76, 144, 240, 0.7);
+  border-color: rgba(54, 220, 255, 0.7);
   outline: none;
   transform: translateY(-1px);
 }
 
 #key-setup-chip .material-symbols-outlined {
-  color: #4c90f0;
+  color: #55dff5;
   font-size: 0.95rem;
 }
 
@@ -69,13 +69,13 @@
   overflow: hidden;
   color: var(--text-primary);
   background:
-    linear-gradient(145deg, rgba(18, 22, 27, 0.97), rgba(18, 22, 27, 0.95)),
-    rgba(18, 22, 27, 0.96);
-  border: 1px solid rgba(76, 144, 240, 0.42);
+    linear-gradient(145deg, rgba(10, 27, 37, 0.97), rgba(7, 13, 22, 0.95)),
+    rgba(7, 17, 25, 0.96);
+  border: 1px solid rgba(54, 220, 255, 0.42);
   border-radius: 0.65rem;
   box-shadow:
     0 1.4rem 4.5rem rgba(0, 0, 0, 0.72),
-    0 0 2.5rem rgba(76, 144, 240, 0.09),
+    0 0 2.5rem rgba(0, 212, 255, 0.09),
     inset 0 0 0 1px rgba(255, 255, 255, 0.025);
   backdrop-filter: blur(28px) saturate(1.25);
   -webkit-backdrop-filter: blur(28px) saturate(1.25);
@@ -105,10 +105,10 @@
   background: linear-gradient(
     90deg,
     transparent,
-    rgba(76, 144, 240, 0.8),
+    rgba(54, 220, 255, 0.8),
     transparent
   );
-  box-shadow: 0 0 1rem rgba(76, 144, 240, 0.45);
+  box-shadow: 0 0 1rem rgba(54, 220, 255, 0.45);
   pointer-events: none;
 }
 
@@ -126,7 +126,7 @@
 }
 
 .key-setup-kicker {
-  color: rgba(76, 144, 240, 0.86);
+  color: rgba(54, 220, 255, 0.86);
 }
 
 .key-setup-close {
@@ -146,7 +146,7 @@
 .key-setup-close:hover,
 .key-setup-close:focus-visible {
   color: rgba(225, 244, 248, 0.95);
-  border-color: rgba(76, 144, 240, 0.5);
+  border-color: rgba(54, 220, 255, 0.5);
   outline: none;
 }
 
@@ -165,7 +165,7 @@
 #key-setup-description {
   max-width: 31rem;
   margin-top: 0.3rem;
-  color: rgba(229, 232, 235, 0.66);
+  color: rgba(215, 231, 235, 0.66);
   font-size: 0.78rem;
   line-height: 1.5;
 }
@@ -173,7 +173,7 @@
 #key-setup-description code {
   padding: 0.05rem 0.25rem;
   font-size: 0.92em;
-  background: rgba(76, 144, 240, 0.08);
+  background: rgba(54, 220, 255, 0.08);
   border-radius: 0.2rem;
 }
 
@@ -184,17 +184,7 @@
   min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(76, 144, 240, 0.45) transparent;
   scrollbar-gutter: stable;
-}
-
-.key-setup-rows::-webkit-scrollbar {
-  width: 6px;
-}
-.key-setup-rows::-webkit-scrollbar-thumb {
-  background: rgba(76, 144, 240, 0.45);
-  border-radius: 3px;
 }
 
 .key-setup-row {
@@ -202,7 +192,7 @@
   gap: 0.35rem;
   padding: 0.6rem 0.7rem;
   background: rgba(29, 69, 81, 0.14);
-  border: 1px solid rgba(76, 144, 240, 0.15);
+  border: 1px solid rgba(100, 200, 220, 0.15);
   border-radius: 0.42rem;
 }
 
@@ -253,7 +243,7 @@
 
 .key-setup-get {
   margin-left: auto;
-  color: rgba(76, 144, 240, 0.75);
+  color: rgba(54, 220, 255, 0.75);
   font-size: 0.58rem;
   letter-spacing: 0.08rem;
   text-decoration: none;
@@ -262,14 +252,14 @@
 
 .key-setup-get:hover,
 .key-setup-get:focus-visible {
-  color: rgba(76, 144, 240, 1);
+  color: rgba(54, 220, 255, 1);
   text-decoration: underline;
   outline: none;
 }
 
 .key-setup-unlocks {
   margin: 0;
-  color: rgba(229, 232, 235, 0.6);
+  color: rgba(198, 220, 226, 0.6);
   font-size: 0.66rem;
 }
 
@@ -284,13 +274,13 @@
   color: rgba(225, 244, 248, 0.92);
   font-family: var(--font-mono);
   font-size: 0.66rem;
-  background: rgba(18, 22, 27, 0.72);
-  border: 1px solid rgba(76, 144, 240, 0.22);
+  background: rgba(4, 14, 20, 0.72);
+  border: 1px solid rgba(100, 200, 220, 0.22);
   border-radius: 0.32rem;
 }
 
 .key-setup-fields input:focus {
-  border-color: rgba(76, 144, 240, 0.65);
+  border-color: rgba(54, 220, 255, 0.65);
   outline: none;
 }
 
@@ -314,19 +304,19 @@
 .key-setup-cloud-auth-toggle {
   margin-left: auto;
   padding: 0.28rem 0.55rem;
-  color: rgba(76, 144, 240, 0.9);
+  color: rgba(54, 220, 255, 0.9);
   font-family: var(--font-mono);
   font-size: 0.55rem;
   letter-spacing: 0.06rem;
-  background: rgba(76, 144, 240, 0.08);
-  border: 1px solid rgba(76, 144, 240, 0.28);
+  background: rgba(54, 220, 255, 0.08);
+  border: 1px solid rgba(54, 220, 255, 0.28);
   border-radius: 0.32rem;
   cursor: pointer;
 }
 
 .key-setup-cloud-auth-toggle:hover,
 .key-setup-cloud-auth-toggle:focus-visible {
-  border-color: rgba(76, 144, 240, 0.65);
+  border-color: rgba(54, 220, 255, 0.65);
   outline: none;
 }
 
@@ -346,7 +336,7 @@
   font-size: 0.66rem;
   font-weight: 700;
   letter-spacing: 0.09rem;
-  background: linear-gradient(180deg, #4c90f0, #1fb9dd);
+  background: linear-gradient(180deg, #45e0ff, #1fb9dd);
   border: none;
   border-radius: 0.38rem;
   cursor: pointer;
@@ -368,7 +358,7 @@
 .key-setup-note {
   min-height: 1.1rem;
   margin-top: 0.5rem;
-  color: rgba(229, 232, 235, 0.62);
+  color: rgba(199, 225, 231, 0.62);
   font-family: var(--font-mono);
   font-size: 0.62rem;
   line-height: 1.35;

@@ -130,7 +130,7 @@
   background: var(--accent-dim);
   border-color: var(--accent);
   color: var(--accent);
-  box-shadow: 0 0 12px rgba(76, 144, 240, 0.15);
+  box-shadow: 0 0 12px rgba(0, 212, 255, 0.15);
 }
 
 /* ── Expandable POI Row ──────────────────────── */
@@ -205,7 +205,7 @@
 .poi-pill.active {
   background: var(--accent-dim);
   border-color: var(--accent);
-  box-shadow: 0 0 12px rgba(76, 144, 240, 0.15);
+  box-shadow: 0 0 12px rgba(0, 212, 255, 0.15);
 }
 
 .poi-pill-name {
@@ -233,7 +233,7 @@
 
 .poi-pill.active .poi-pill-key {
   color: var(--accent);
-  background: rgba(76, 144, 240, 0.12);
+  background: rgba(0, 212, 255, 0.12);
 }
 
 /* ── Location Search ─────────────────────────── */
@@ -297,4 +297,21 @@
 
 #location-search.searching {
   opacity: 0.5;
+}
+
+.location-search-error {
+  /* Its own line under the search row, which clips overflow in the dock. */
+  margin: 6px 0 0;
+  padding: 6px 10px;
+  border: 1px solid rgba(255, 99, 99, 0.45);
+  border-radius: 6px;
+  background: rgba(30, 8, 10, 0.92);
+  color: #ffb3b3;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.location-search-error:empty {
+  display: none;
 }

@@ -1,45 +1,43 @@
 /* ═══════════════════════════════════════════════
-   GOD'S EYE VIEW — Operations console UI
-   Graphite surfaces, hairline borders, flat panels.
-   Component skin lives in gotham.css (imported last).
+   GOD'S EYE VIEW — Dark Sci-Fi UI
+   Apple meets Blade Runner
    ═══════════════════════════════════════════════ */
 
 :root {
-  /* Graphite surfaces, hairline borders, one restrained signal blue. */
-  --bg-dark: #0e1114;
-  --surface-1: #14181d;
-  --surface-2: #1c2127;
-  --surface-3: #252a31;
-  --glass-bg: rgba(18, 22, 27, 0.94);
-  --glass-border: rgba(138, 155, 168, 0.2);
-  --glass-border-hover: rgba(138, 155, 168, 0.42);
-  --accent: #4c90f0;
-  --accent-dim: rgba(76, 144, 240, 0.16);
-  --accent-glow: rgba(76, 144, 240, 0.22);
-  --text-primary: #e5e8eb;
-  --text-secondary: #abb3bf;
-  --text-dim: #738091;
-  /* Status colors are reserved for state, never decoration. */
-  --signal-ok: #32a467;
-  --signal-warn: #ec9a3c;
-  --signal-danger: #e76a6e;
-  --marking: #f5c518;
-  --banner-h: 18px;
-  --appbar-h: 44px;
-  --statusbar-h: 26px;
+  --bg-dark: #0a0a0f;
+  --glass-bg: rgba(12, 12, 20, 0.72);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-border-hover: rgba(255, 255, 255, 0.15);
+  --accent: #00d4ff;
+  /* Every scrolling surface's scrollbar (the kit's .ui-scroll). */
+  --scroll-thumb: rgba(0, 212, 255, 0.46);
+  --scroll-track: rgba(255, 255, 255, 0.06);
+  --accent-dim: rgba(0, 212, 255, 0.15);
+  --accent-glow: rgba(0, 212, 255, 0.4);
+  --text-primary: #e8eaed;
+  --text-secondary: rgba(232, 234, 237, 0.5);
+  --text-dim: rgba(232, 234, 237, 0.3);
   /* Opaque surface for browser-painted menus, which cannot use --glass-bg. */
-  --menu-bg: #1c2127;
+  --menu-bg: #12121c;
   --font-mono: 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace;
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  --panel-radius: 2px;
-  --btn-radius: 2px;
-  --transition-fast: 120ms cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-smooth: 200ms cubic-bezier(0.4, 0, 0.2, 1);
-  --left-stack-x: 12px;
-  --right-rail-x: 12px;
-  --left-stack-top: calc(var(--banner-h) + var(--appbar-h) + 12px);
-  --left-stack-gap: 44px;
-  --left-collapsed-width: 200px;
+  --panel-radius: 16px;
+  --btn-radius: 10px;
+  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  /* Label type shared by the command dock and the side panel titles. */
+  --dock-label-color: rgba(206, 232, 239, 0.72);
+  --dock-label-font-size: 0.58rem;
+  --dock-label-font-weight: 500;
+  --dock-label-letter-spacing: 0.13rem;
+  --transition-smooth: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+  /* The side stacks clear the 52px edge gutter that holds the vertical HUD
+     readout, plus the floating panel rail (42px) and its 6px gap. */
+  --panel-rail-clearance: 48px;
+  --left-stack-x: calc(52px + var(--panel-rail-clearance));
+  --right-rail-x: calc(52px + var(--panel-rail-clearance));
+  --left-stack-top: 26vh;
+  --left-stack-gap: 72px;
+  --left-collapsed-width: 176px;
   --display-panel-expanded-width: 272px;
   --cockpit-radio-collapsed-width: 148px;
   --cockpit-radio-expanded-width: 232px;
@@ -246,7 +244,7 @@ body.cockpit-mode #cockpit-cloud-effects.active {
 .celestial-ring-outline {
   position: absolute;
   box-sizing: border-box;
-  border: 0.8px solid rgba(229, 232, 235, 0.095);
+  border: 0.8px solid rgba(151, 218, 232, 0.095);
   border-radius: 50%;
   will-change: width, height;
 }
@@ -277,10 +275,10 @@ body.cockpit-mode #cockpit-cloud-effects.active {
 }
 
 .celestial-moon {
-  color: rgba(76, 144, 240, 0.84);
+  color: rgba(55, 211, 239, 0.84);
   text-shadow:
-    0 0 7px rgba(76, 144, 240, 0.65),
-    0 0 17px rgba(76, 144, 240, 0.25);
+    0 0 7px rgba(55, 211, 239, 0.65),
+    0 0 17px rgba(55, 211, 239, 0.25);
 }
 
 #celestial-toggle:disabled {
@@ -394,7 +392,7 @@ body.cockpit-mode #cockpit-cloud-effects.active {
   position: fixed;
   right: 36px;
   bottom: 36px;
-  /* Z ladder: panels 100-139, voice pill 150, toast 200, clean-view-exit 300 */
+  /* Z ladder: panels ~100, voice pill 150, toast 200, clean-view-exit 300 */
   z-index: 150;
   display: flex;
   align-items: center;
@@ -409,7 +407,7 @@ body.cockpit-mode #cockpit-cloud-effects.active {
     0 8px 32px rgba(0, 0, 0, 0.5),
     0 0 0 1px rgba(255, 255, 255, 0.03) inset,
     0 1px 0 rgba(255, 255, 255, 0.06) inset,
-    0 0 20px rgba(76, 144, 240, 0.08);
+    0 0 20px rgba(0, 212, 255, 0.08);
   backdrop-filter: blur(24px) saturate(1.4);
   -webkit-backdrop-filter: blur(24px) saturate(1.4);
   font-family: var(--font-mono);
@@ -421,8 +419,8 @@ body.cockpit-mode #cockpit-cloud-effects.active {
   height: 34px;
   flex: 0 0 auto;
   color: var(--accent);
-  background: rgba(76, 144, 240, 0.06);
-  border: 1px solid rgba(76, 144, 240, 0.28);
+  background: rgba(0, 212, 255, 0.06);
+  border: 1px solid rgba(0, 212, 255, 0.28);
   border-radius: var(--btn-radius);
   font-family: var(--font-mono);
   font-size: 10px;
@@ -433,7 +431,7 @@ body.cockpit-mode #cockpit-cloud-effects.active {
 #gev-voice-button:hover {
   color: #ffffff;
   border-color: var(--accent);
-  box-shadow: 0 0 12px rgba(76, 144, 240, 0.22);
+  box-shadow: 0 0 12px rgba(0, 212, 255, 0.22);
 }
 
 .gev-voice-readout {
@@ -505,7 +503,7 @@ body.cockpit-mode #cockpit-cloud-effects.active {
 #title-bar {
   position: fixed;
   top: 32px;
-  left: 36px;
+  inset-inline-start: 36px;
   z-index: 100;
   pointer-events: none;
   user-select: none;
@@ -514,7 +512,7 @@ body.cockpit-mode #cockpit-cloud-effects.active {
 #title-bar .title-glow {
   position: absolute;
   top: -20px;
-  left: -20px;
+  inset-inline-start: -20px;
   width: 200px;
   height: 80px;
   background: radial-gradient(ellipse, var(--accent-dim) 0%, transparent 70%);
@@ -540,7 +538,7 @@ body.cockpit-mode #cockpit-cloud-effects.active {
   display: block;
   width: 52px;
   height: auto;
-  filter: drop-shadow(0 0 12px rgba(76, 144, 240, 0.5));
+  filter: drop-shadow(0 0 12px rgba(0, 246, 255, 0.5));
 }
 
 #title-bar .title-logo::before,
@@ -639,11 +637,11 @@ body.cockpit-mode #cockpit-cloud-effects.active {
 #style-indicator {
   position: fixed;
   top: 32px;
-  right: 36px;
+  inset-inline-end: 36px;
   z-index: 100;
   pointer-events: none;
   user-select: none;
-  text-align: right;
+  text-align: end;
 }
 
 #style-indicator .indicator-label {
