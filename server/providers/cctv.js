@@ -18,6 +18,43 @@ import { sanitizeCctvRangeHeader } from './cctv/range.js';
 import { admitSameSiteKeyless } from './common/same-site.js';
 import { PROXY_SIGNALS } from '../../src/localRequestGate.mjs';
 import { createHlsPuller } from './cctv/stream.js';
+
+const CCTV_PACK_COUNTRIES = Object.freeze({
+  austin: 'United States',
+  caltrans: 'United States',
+  tfl: 'United Kingdom',
+  ontario: 'Canada',
+  fintraffic: 'Finland',
+  drivebc: 'Canada',
+  txdot: 'United States',
+  tallinn: 'Estonia',
+  tarktee: 'Estonia',
+  warendorf: 'Germany',
+  nsw: 'Australia',
+  calgary: 'Canada',
+  catalonia: 'Spain',
+  hk: 'Hong Kong',
+  deldot: 'United States',
+  kingcounty: 'United States',
+  wsdot: 'United States',
+  vegvesen: 'Norway',
+  nyc: 'United States',
+  toronto: 'Canada',
+  lithuania: 'Lithuania',
+  florida: 'United States',
+  taiwan: 'Taiwan',
+  a22: 'Italy',
+  singapore: 'Singapore',
+  'new-zealand': 'New Zealand',
+});
+
+function sourceCountry(source) {
+  return (
+    String(source.country || '').trim() ||
+    CCTV_PACK_COUNTRIES[String(source.pack || '').trim().toLowerCase()] ||
+    ''
+  );
+}
 import { googleServerApiKey } from './places/google-key.js';
 export { CCTV_FRAME_FETCH_TIMEOUT_MS, fetchCctvImageFromUpstream };
 /**
@@ -160,6 +197,7 @@ export function cctvProxy({ sourceRoot = process.cwd() } = {}) {
               pack: source.pack,
               name: source.name,
               city: source.city,
+              country: sourceCountry(source),
               cityId: source.cityId,
               provider: source.provider,
               lat: source.lat,

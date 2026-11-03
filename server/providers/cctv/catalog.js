@@ -6,6 +6,7 @@ import { loadGroundHeights, joinGroundHeights } from './groundHeights.js';
 import { cameraRegion, normalizeSourceItem } from './normalize.js';
 import { loadLithuaniaSources } from './lithuania.js';
 import { loadTaiwanSources } from './taiwan.js';
+import { loadNewZealandSources, loadSingaporeSources } from './global.js';
 import {
   loadAustinSourcesFromOpenData,
   loadCaltransSourcesFromOpenData,
@@ -170,6 +171,16 @@ const LIVE_PACKS = [
     name: 'a22',
     enabled: () => envEnabled('CCTV_A22_ENABLED'),
     load: loadA22SourcesFromOpenDataHub,
+  },
+  {
+    name: 'singapore',
+    enabled: () => envEnabled('CCTV_SINGAPORE_ENABLED'),
+    load: loadSingaporeSources,
+  },
+  {
+    name: 'new-zealand',
+    enabled: () => envEnabled('CCTV_NEW_ZEALAND_ENABLED'),
+    load: loadNewZealandSources,
   },
 ];
 /**

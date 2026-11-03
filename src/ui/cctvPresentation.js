@@ -68,7 +68,10 @@ export function _renderCctvState(state) {
       for (const camera of cameras) {
         const option = document.createElement('option');
         option.value = camera.id;
-        option.textContent = `${camera.city} · ${camera.name}`;
+        const location = [camera.country, camera.city]
+          .filter(Boolean)
+          .join(' · ');
+        option.textContent = `${location || 'Global'} · ${camera.name}`;
         this._cctvSelect.appendChild(option);
       }
     }
@@ -178,17 +181,23 @@ export function _renderCctvState(state) {
         },
       );
     } else if (cameras.length > 0) {
+      const countries = new Set(
+        cameras.map((camera) => camera.country).filter(Boolean),
+      );
+      const coverage = countries.size
+        ? ` · ${countries.size} ${countries.size === 1 ? 'country' : 'countries'}`
+        : '';
       this._cctvMeta.textContent = enabled
-        ? tn(
+        ? `${tn(
             cameras.length,
             '{count} camera loaded · click a camera to activate',
             '{count} cameras loaded · click a camera to activate',
-          )
-        : tn(
+          )}${coverage}`
+        : `${tn(
             cameras.length,
             '{count} camera loaded · enable CCTV to activate',
             '{count} cameras loaded · enable CCTV to activate',
-          );
+          )}${coverage}`;
     } else {
       this._cctvMeta.textContent = t(
         'Enable CCTV to load camera intersections',
