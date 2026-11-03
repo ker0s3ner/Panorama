@@ -1,0 +1,856 @@
+/* ═══════════════════════════════════════════════════════════════════════
+   Operations-console skin (Gotham / Lattice lineage)
+
+   Principles
+   - The map is the product. Chrome is flat, graphite, hairline-bordered.
+   - One accent (signal blue). Amber/green/red mean state, never decoration.
+   - Sans for labels and prose, mono only for data. Uppercase micro-labels.
+   - No glow, no blur, no pills, no corner brackets.
+
+   This file only re-skins; geometry and behavior stay with the owners of
+   each component. It is imported last so equal-specificity rules win, and
+   it stands down when the legacy Cyber theme is selected.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+:root:not([data-ui-theme='cyber']) {
+  color-scheme: dark;
+  /* Marking banner, status bar and command dock are removed from the shell. */
+  --banner-h: 0px;
+  --statusbar-h: 0px;
+  --gv-label: 600 10px/1 var(--font-sans);
+  --gv-label-track: 0.09em;
+  --gv-row-hover: rgba(138, 155, 168, 0.1);
+  --gv-row-active: rgba(76, 144, 240, 0.14);
+  --gv-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
+  --gv-shadow-pop: 0 6px 20px rgba(0, 0, 0, 0.55);
+}
+
+/* ── Global de-glow ─────────────────────────────────────────────────── */
+:root:not([data-ui-theme='cyber']) :is(.panel-glow, .title-glow) {
+  display: none !important;
+}
+
+:root:not([data-ui-theme='cyber']) body > :not(#cesiumContainer) *,
+:root:not([data-ui-theme='cyber']) body > :not(#cesiumContainer) {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+:root:not([data-ui-theme='cyber']) :is(#title-bar, #style-indicator, .panel-title, .pp-header-label, .panel-mini-value, #global-loading-status) {
+  text-shadow: none !important;
+}
+
+/* ── Classification banner (HUD marking strip) ──────────────────────── */
+:root:not([data-ui-theme='cyber']) #intel-hud {
+  --hud-color: var(--text-secondary);
+  --hud-glow: transparent;
+  --hud-border: var(--glass-border);
+}
+
+:root:not([data-ui-theme='cyber']) #intel-hud * {
+  text-shadow: none;
+  line-height: 1.4;
+}
+
+:root:not([data-ui-theme='cyber']) #intel-hud .hud-top-bar {
+  display: flex;
+  top: 0;
+  left: 0;
+  right: 0;
+  width: auto;
+  height: var(--banner-h);
+  padding: 0 12px;
+  transform: none;
+  border: 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.5);
+  background: var(--marking);
+  box-shadow: none;
+  font: 700 10px/var(--banner-h) var(--font-sans);
+  letter-spacing: 0.14em;
+}
+
+:root:not([data-ui-theme='cyber']) #intel-hud .hud-top-bar > * {
+  color: #14110a;
+  opacity: 1;
+}
+
+:root:not([data-ui-theme='cyber']) #intel-hud .hud-top-bar-center {
+  font-family: var(--font-mono);
+  font-weight: 500;
+  letter-spacing: 0.08em;
+}
+
+/* ── App bar ────────────────────────────────────────────────────────── */
+:root:not([data-ui-theme='cyber']) #title-bar {
+  top: var(--banner-h);
+  left: 0;
+  right: 0;
+  height: var(--appbar-h);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 0 12px;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--glass-border);
+  box-shadow: none;
+  z-index: 120;
+}
+
+:root:not([data-ui-theme='cyber']) body:not(:has(#intel-hud.active)) #title-bar {
+  top: 0;
+}
+
+:root:not([data-ui-theme='cyber']) #title-bar h1 {
+  gap: 10px;
+  font: 600 13px/1 var(--font-sans);
+  letter-spacing: 0.16em;
+  text-shadow: none;
+  color: var(--text-primary);
+}
+
+:root:not([data-ui-theme='cyber']) #title-bar .title-logo {
+  width: 34px;
+  filter: none;
+}
+
+:root:not([data-ui-theme='cyber']) #title-bar .title-accent {
+  font-weight: 600;
+  color: var(--accent);
+}
+
+:root:not([data-ui-theme='cyber']) #title-bar .subtitle {
+  margin: 0;
+  padding-left: 14px;
+  border-left: 1px solid var(--glass-border);
+  font: 500 10px/1 var(--font-sans);
+  letter-spacing: 0.12em;
+  color: var(--text-dim);
+}
+
+:root:not([data-ui-theme='cyber']) #title-bar .frame-rate-readout {
+  margin: 0 0 0 auto;
+  font: 500 10px/1 var(--font-mono);
+  letter-spacing: 0.04em;
+  color: var(--text-dim);
+}
+
+:root:not([data-ui-theme='cyber']) #style-indicator {
+  top: calc(var(--banner-h) + 10px);
+  right: 232px;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  text-align: left;
+  z-index: 121;
+}
+
+:root:not([data-ui-theme='cyber']) body:not(:has(#intel-hud.active)) #style-indicator {
+  top: 10px;
+}
+
+:root:not([data-ui-theme='cyber']) #style-indicator .indicator-label {
+  font: var(--gv-label);
+  letter-spacing: var(--gv-label-track);
+  color: var(--text-dim);
+}
+
+:root:not([data-ui-theme='cyber']) #style-indicator .indicator-value {
+  margin: 0;
+  padding: 3px 7px;
+  border: 1px solid var(--glass-border);
+  background: var(--surface-3);
+  font: 600 10px/1 var(--font-mono);
+  letter-spacing: 0.08em;
+  color: var(--text-primary);
+  text-shadow: none;
+}
+
+/* Globe actions: a segmented toolbar at the right of the app bar. */
+:root:not([data-ui-theme='cyber']) #top-center-actions {
+  top: calc(var(--banner-h) + 8px);
+  left: auto;
+  right: 12px;
+  gap: 0;
+  transform: none;
+  z-index: 121;
+  border: 1px solid var(--glass-border);
+  background: var(--surface-3);
+}
+
+:root:not([data-ui-theme='cyber']) body:not(:has(#intel-hud.active)) #top-center-actions {
+  top: 8px;
+}
+
+:root:not([data-ui-theme='cyber']) #top-center-actions button {
+  width: 32px;
+  height: 26px;
+  border: 0;
+  border-right: 1px solid var(--glass-border);
+  border-radius: 0;
+  background: transparent;
+  color: var(--text-secondary);
+}
+
+:root:not([data-ui-theme='cyber']) #top-center-actions button:last-child {
+  border-right: 0;
+}
+
+:root:not([data-ui-theme='cyber']) #top-center-actions button:hover,
+:root:not([data-ui-theme='cyber']) #top-center-actions button:focus-visible {
+  background: var(--gv-row-hover);
+  color: var(--text-primary);
+  transform: none;
+}
+
+:root:not([data-ui-theme='cyber']) #top-center-actions button:active {
+  transform: none;
+  background: var(--gv-row-active);
+}
+
+:root:not([data-ui-theme='cyber']) #tilt-map-view[aria-pressed='true'] {
+  background: var(--gv-row-active);
+  box-shadow: none;
+}
+
+:root:not([data-ui-theme='cyber']) #top-center-actions .material-symbols-outlined {
+  font-size: 16px;
+}
+
+/* ── HUD readouts → quiet telemetry ─────────────────────────────────── */
+:root:not([data-ui-theme='cyber']) #intel-hud .hud-bracket,
+:root:not([data-ui-theme='cyber']) #intel-hud .hud-edge,
+:root:not([data-ui-theme='cyber']) #intel-hud .hud-classification {
+  display: none;
+}
+
+:root:not([data-ui-theme='cyber']) #intel-hud .hud-content {
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  font-family: var(--font-mono);
+}
+
+:root:not([data-ui-theme='cyber']) #intel-hud .hud-corner {
+  gap: 0;
+  padding: 0;
+}
+
+/* Bottom status bar: coordinates left, sensor/time right. */
+:root:not([data-ui-theme='cyber']) #intel-hud::after {
+  content: '';
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: var(--statusbar-h);
+  background: var(--surface-2);
+  border-top: 1px solid var(--glass-border);
+  pointer-events: none;
+}
+
+:root:not([data-ui-theme='cyber']) #intel-hud .hud-bottom-left,
+:root:not([data-ui-theme='cyber']) #intel-hud .hud-bottom-right {
+  bottom: 0;
+  height: var(--statusbar-h);
+  align-items: center;
+  z-index: 1;
+}
+
+:root:not([data-ui-theme='cyber']) #intel-hud .hud-bottom-left {
+  left: 12px;
+}
+
+:root:not([data-ui-theme='cyber']) #intel-hud .hud-bottom-right {
+  right: 12px;
+}
+
+:root:not([data-ui-theme='cyber']) #intel-hud .hud-bottom-left .hud-content,
+:root:not([data-ui-theme='cyber']) #intel-hud .hud-bottom-right .hud-content {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  text-align: left !important;
+}
+
+:root:not([data-ui-theme='cyber']) #intel-hud .hud-bottom-left .hud-content > *,
+:root:not([data-ui-theme='cyber']) #intel-hud .hud-bottom-right .hud-content > * {
+  white-space: nowrap;
+  color: var(--text-secondary);
+}
+
+:root:not([data-ui-theme='cyber']) #intel-hud .hud-ais-vessel {
+  margin: 0;
+  max-width: 280px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap !important;
+}
+
+/* View card: mode + AI summary, centered under the app bar. */
+:root:not([data-ui-theme='cyber']) #intel-hud .hud-top-left {
+  top: calc(var(--banner-h) + var(--appbar-h) + 10px);
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+:root:not([data-ui-theme='cyber']) #intel-hud .hud-top-left .hud-content {
+  min-width: 220px;
+  max-width: 320px;
+  padding: 8px 10px;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-left: 2px solid var(--accent);
+  box-shadow: var(--gv-shadow);
+}
+
+:root:not([data-ui-theme='cyber']) #intel-hud .hud-system {
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  color: var(--text-dim);
+  opacity: 1;
+}
+
+:root:not([data-ui-theme='cyber']) #intel-hud .hud-mode {
+  margin-top: 2px;
+  font: 600 13px/1.3 var(--font-sans);
+  letter-spacing: 0.1em;
+  color: var(--text-primary);
+}
+
+:root:not([data-ui-theme='cyber']) #intel-hud .hud-summary-wrap {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid var(--glass-border);
+  max-width: none;
+}
+
+:root:not([data-ui-theme='cyber']) #intel-hud .hud-summary-label {
+  font: var(--gv-label);
+  letter-spacing: var(--gv-label-track);
+  color: var(--text-dim);
+  opacity: 1;
+}
+
+:root:not([data-ui-theme='cyber']) #intel-hud .hud-summary {
+  font: 400 11px/1.4 var(--font-sans);
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--text-secondary);
+  opacity: 1;
+}
+
+/* Time / REC sits in the middle of the app bar. */
+:root:not([data-ui-theme='cyber']) #intel-hud .hud-top-right {
+  top: var(--banner-h);
+  right: auto;
+  left: 50%;
+  height: var(--appbar-h);
+  align-items: center;
+  transform: translateX(-50%);
+}
+
+:root:not([data-ui-theme='cyber']) #intel-hud .hud-top-right .hud-content {
+  text-align: center !important;
+}
+
+:root:not([data-ui-theme='cyber']) #intel-hud .hud-orbital {
+  display: none;
+}
+
+:root:not([data-ui-theme='cyber']) #intel-hud .hud-rec {
+  font-size: 10px;
+  letter-spacing: 0.06em;
+}
+
+:root:not([data-ui-theme='cyber']) #hud-rec-dot {
+  font-size: 9px;
+  color: var(--signal-danger);
+  text-shadow: none;
+}
+
+:root:not([data-ui-theme='cyber']) #intel-hud .hud-orbital {
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  opacity: 1;
+  color: var(--text-dim);
+}
+
+/* ── Panels: flat, opaque, hairline ─────────────────────────────────── */
+:root:not([data-ui-theme='cyber'])
+  :is(
+    .panel-inner,
+    .data-panel-inner,
+    .cctv-panel-inner,
+    .street-level-panel-inner,
+    .weather-panel-inner,
+    .recent-imagery-panel-inner,
+    .global-context-panel-inner,
+    .radio-panel-inner,
+    .scene-panel-inner,
+    .location-inner,
+    #pp-toggles
+  ) {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 2px;
+  box-shadow: var(--gv-shadow);
+}
+
+:root:not([data-ui-theme='cyber']) #pp-toggles:not(.collapsed) {
+  background: var(--glass-bg);
+}
+
+/* Panel headers read as a titled toolbar row. */
+:root:not([data-ui-theme='cyber']) .panel-header,
+:root:not([data-ui-theme='cyber']) #pp-toggles .pp-header-row {
+  gap: 8px;
+}
+
+:root:not([data-ui-theme='cyber']) .panel-title,
+:root:not([data-ui-theme='cyber']) #pp-toggles .pp-header-label {
+  font: var(--gv-label);
+  font-size: 10px;
+  letter-spacing: var(--gv-label-track);
+  color: var(--text-secondary);
+}
+
+:root:not([data-ui-theme='cyber']) .panel-divider {
+  background: none;
+}
+
+:root:not([data-ui-theme='cyber']) .panel-collapse-btn {
+  width: 22px;
+  height: 22px;
+  border-radius: 2px;
+  border: 1px solid var(--glass-border);
+  background: var(--surface-3);
+  color: var(--text-secondary);
+}
+
+:root:not([data-ui-theme='cyber']) .panel-collapse-btn:hover {
+  background: var(--gv-row-hover);
+  border-color: var(--glass-border-hover);
+  color: var(--text-primary);
+}
+
+/* ── Layer rows ─────────────────────────────────────────────────────── */
+:root:not([data-ui-theme='cyber']) .data-layer-group-heading {
+  margin: 10px 0 2px;
+  padding: 10px 10px 4px;
+  border-top: 1px solid var(--glass-border);
+  font: var(--gv-label);
+  letter-spacing: var(--gv-label-track);
+  color: var(--text-dim);
+}
+
+:root:not([data-ui-theme='cyber']) .data-layer-group-heading:first-child {
+  border-top: 0;
+  padding-top: 2px;
+  margin-top: 0;
+}
+
+:root:not([data-ui-theme='cyber']) .data-toggle-row {
+  border-radius: 2px;
+  border-left: 2px solid transparent;
+  padding: 7px 10px 6px;
+}
+
+:root:not([data-ui-theme='cyber']) .data-toggle-row:hover {
+  background: var(--gv-row-hover);
+}
+
+/* ── Buttons, toggles, segmented controls ───────────────────────────── */
+:root:not([data-ui-theme='cyber'])
+  :is(.scene-btn, .pp-toggle-btn, .pp-mode-btn, .style-btn, .location-pill, .poi-pill, .search-toggle-btn) {
+  border-radius: 2px;
+  box-shadow: none;
+  text-shadow: none;
+}
+
+:root:not([data-ui-theme='cyber']) :is(.scene-btn, .pp-toggle-btn, .style-btn):hover {
+  transform: none;
+}
+
+:root:not([data-ui-theme='cyber']) :is(.pp-toggle-btn, .pp-mode-btn, .scene-btn).active,
+:root:not([data-ui-theme='cyber']) .style-btn.active,
+:root:not([data-ui-theme='cyber']) .location-pill.active {
+  box-shadow: none;
+  text-shadow: none;
+}
+
+:root:not([data-ui-theme='cyber']) :is(.pp-select, .scene-btn, select) {
+  border-radius: 2px;
+}
+
+:root:not([data-ui-theme='cyber']) .pp-slider-mini-label,
+:root:not([data-ui-theme='cyber']) .btn-key,
+:root:not([data-ui-theme='cyber']) .panel-mini-label {
+  font-family: var(--font-sans);
+  letter-spacing: 0.08em;
+}
+
+:root:not([data-ui-theme='cyber']) .pp-slider::-webkit-slider-thumb {
+  box-shadow: none;
+  border-radius: 1px;
+}
+
+:root:not([data-ui-theme='cyber']) .pp-slider::-moz-range-thumb {
+  box-shadow: none;
+  border-radius: 1px;
+}
+
+/* ── Display panel: toggles are rows with a state square ────────────── */
+:root:not([data-ui-theme='cyber']) #pp-toggles:not(.collapsed) {
+  gap: 0;
+  padding: 0;
+}
+
+:root:not([data-ui-theme='cyber']) #pp-toggles:not(.collapsed) > .pp-header-row {
+  min-height: 34px;
+  padding: 0 10px;
+  border-bottom: 1px solid var(--glass-border);
+}
+
+:root:not([data-ui-theme='cyber']) #pp-toggles .pp-header-label {
+  font: var(--gv-label);
+  letter-spacing: var(--gv-label-track);
+  color: var(--text-secondary);
+}
+
+:root:not([data-ui-theme='cyber']) #pp-toggles .pp-toggle-btn,
+:root:not([data-ui-theme='cyber']) #detection-toggle.active,
+:root:not([data-ui-theme='cyber']) #detection-toggle.panoptic,
+:root:not([data-ui-theme='cyber']) #detection-toggle.god {
+  min-height: 32px;
+  gap: 10px;
+  padding: 6px 10px;
+  background: transparent;
+  border: 0;
+  border-left: 2px solid transparent;
+  border-bottom: 1px solid rgba(138, 155, 168, 0.1);
+  border-radius: 0 !important;
+  box-shadow: none;
+  animation: none;
+}
+
+:root:not([data-ui-theme='cyber']) #pp-toggles .pp-toggle-btn:hover {
+  background: var(--gv-row-hover);
+}
+
+:root:not([data-ui-theme='cyber']) #pp-toggles .pp-toggle-btn.active,
+:root:not([data-ui-theme='cyber']) #detection-toggle.active {
+  background: var(--gv-row-active);
+  border-left-color: var(--accent);
+}
+
+:root:not([data-ui-theme='cyber']) #pp-toggles .pp-icon,
+:root:not([data-ui-theme='cyber']) #detection-toggle.active .pp-icon {
+  color: var(--text-dim);
+  text-shadow: none;
+  opacity: 0.9;
+}
+
+:root:not([data-ui-theme='cyber']) #pp-toggles .pp-toggle-btn.active .pp-icon,
+:root:not([data-ui-theme='cyber']) #detection-toggle.active .pp-icon {
+  color: var(--accent);
+}
+
+:root:not([data-ui-theme='cyber']) .pp-label,
+:root:not([data-ui-theme='cyber']) #detection-toggle.active .pp-label {
+  font: 600 11px/1.2 var(--font-sans);
+  letter-spacing: 0.06em;
+  color: var(--text-secondary);
+}
+
+:root:not([data-ui-theme='cyber']) .pp-toggle-btn.active .pp-label,
+:root:not([data-ui-theme='cyber']) #detection-toggle.active .pp-label {
+  color: var(--text-primary);
+}
+
+:root:not([data-ui-theme='cyber']) .pp-slider-row {
+  background: rgba(0, 0, 0, 0.18);
+  border: 0;
+  border-bottom: 1px solid rgba(138, 155, 168, 0.1);
+  border-radius: 0;
+  padding: 6px 10px 7px 22px;
+}
+
+:root:not([data-ui-theme='cyber']) .pp-toggle-group .pp-slider-row.visible ~ .pp-toggle-btn,
+:root:not([data-ui-theme='cyber']) .pp-toggle-group:has(.pp-slider-row.visible) .pp-toggle-btn {
+  border-radius: 0 !important;
+}
+
+:root:not([data-ui-theme='cyber']) .pp-slider {
+  height: 2px;
+  border-radius: 0;
+  background: rgba(138, 155, 168, 0.3);
+}
+
+:root:not([data-ui-theme='cyber']) .pp-slider::-webkit-slider-thumb {
+  width: 8px;
+  height: 12px;
+  border-radius: 1px;
+}
+
+:root:not([data-ui-theme='cyber']) .pp-slider-value {
+  font-family: var(--font-mono);
+}
+
+:root:not([data-ui-theme='cyber']) .pp-mode-seg {
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+:root:not([data-ui-theme='cyber']) #param-slider-panel {
+  border-radius: 2px;
+  box-shadow: var(--gv-shadow);
+}
+
+:root:not([data-ui-theme='cyber']) #pp-toggles.collapsed .pp-header-row {
+  border-radius: 2px;
+  background: var(--glass-bg);
+  box-shadow: var(--gv-shadow);
+}
+
+/* ── Command dock: one flat bar floating over the status bar's quiet middle ──
+   Position stays with command-dock*.css: creditAttribution.test.mjs models those
+   offsets fail-closed, and the status bar keeps its center empty for the dock. */
+:root:not([data-ui-theme='cyber']) #command-dock {
+  padding: 0;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border-hover);
+  border-radius: 2px;
+  box-shadow: var(--gv-shadow-pop);
+}
+
+:root:not([data-ui-theme='cyber']) #command-dock > #location-bar,
+:root:not([data-ui-theme='cyber']) #command-dock > #control-panel {
+  border-color: var(--glass-border);
+}
+
+:root:not([data-ui-theme='cyber']) #command-dock .panel-title,
+:root:not([data-ui-theme='cyber']) #command-dock .location-toolbar-label {
+  font: 600 10px/1 var(--font-sans);
+  letter-spacing: 0.1em;
+  color: var(--text-secondary);
+}
+
+:root:not([data-ui-theme='cyber']) #command-dock .panel-title::after,
+:root:not([data-ui-theme='cyber']) #command-dock .location-toolbar-label::after {
+  color: var(--text-dim);
+  font-size: 12px;
+}
+
+:root:not([data-ui-theme='cyber']) #command-dock .dock-tray-toggle:hover .panel-title,
+:root:not([data-ui-theme='cyber']) #command-dock .dock-tray-toggle:hover .location-toolbar-label {
+  color: var(--text-primary);
+}
+
+:root:not([data-ui-theme='cyber']) #command-dock > #gev-voice-control {
+  background: var(--surface-2);
+  border: 0;
+  border-left: 1px solid var(--glass-border);
+  border-right: 1px solid var(--glass-border);
+  border-radius: 0;
+  box-shadow: none;
+}
+
+:root:not([data-ui-theme='cyber']) #command-dock .gev-voice-kicker,
+:root:not([data-ui-theme='cyber']) #command-dock .gev-mic-label {
+  font: 600 9px/1 var(--font-sans);
+  letter-spacing: 0.08em;
+  color: var(--text-dim);
+}
+
+:root:not([data-ui-theme='cyber']) #command-dock #gev-voice-status {
+  font: 600 9px/1 var(--font-mono);
+  color: var(--text-secondary);
+}
+
+:root:not([data-ui-theme='cyber']) #command-dock #gev-voice-button {
+  border-radius: 2px;
+  border-color: var(--glass-border-hover);
+  background: var(--surface-3);
+  box-shadow: none;
+}
+
+:root:not([data-ui-theme='cyber']) #command-dock #gev-voice-button:hover {
+  border-color: var(--accent);
+}
+
+:root:not([data-ui-theme='cyber']) #command-dock .gev-voice-visualizer {
+  border-bottom-color: var(--glass-border);
+}
+
+:root:not([data-ui-theme='cyber']) #command-dock .gev-voice-visualizer span {
+  background: var(--accent);
+  box-shadow: none;
+}
+
+:root:not([data-ui-theme='cyber']) #command-dock .location-pill,
+:root:not([data-ui-theme='cyber']) #command-dock .poi-pill {
+  border-radius: 2px;
+}
+
+:root:not([data-ui-theme='cyber']) :is(.location-pill, .poi-pill, .search-toggle-btn, #location-search) {
+  background: var(--surface-3);
+  border: 1px solid var(--glass-border);
+  color: var(--text-secondary);
+  font-family: var(--font-sans);
+  letter-spacing: 0.04em;
+}
+
+:root:not([data-ui-theme='cyber']) :is(.location-pill, .poi-pill):hover {
+  background: var(--gv-row-hover);
+  color: var(--text-primary);
+}
+
+:root:not([data-ui-theme='cyber']) :is(.location-pill, .poi-pill).active {
+  background: var(--gv-row-active);
+  border-color: var(--accent);
+  color: var(--text-primary);
+}
+
+:root:not([data-ui-theme='cyber']) #location-search {
+  border-radius: 2px;
+}
+
+:root:not([data-ui-theme='cyber']) #location-search:focus {
+  border-color: var(--accent);
+  outline: none;
+}
+
+/* Visual preset tiles. */
+:root:not([data-ui-theme='cyber']) .style-btn {
+  background: var(--surface-3);
+  border: 1px solid var(--glass-border);
+}
+
+:root:not([data-ui-theme='cyber']) .style-btn:hover {
+  background: var(--gv-row-hover);
+  border-color: var(--glass-border-hover);
+}
+
+:root:not([data-ui-theme='cyber']) .style-btn.active {
+  background: var(--gv-row-active);
+  border-color: var(--accent);
+}
+
+:root:not([data-ui-theme='cyber']) .style-btn .btn-icon {
+  filter: grayscale(1) brightness(1.2);
+}
+
+:root:not([data-ui-theme='cyber']) .style-btn.active .btn-icon {
+  filter: none;
+}
+
+/* ── Corner chips (POWER UP / language) sit above the status bar ────── */
+:root:not([data-ui-theme='cyber']) #corner-actions {
+  inset-block-end: calc(var(--statusbar-h) + 10px);
+  inset-inline-end: 12px;
+  gap: 6px;
+}
+
+:root:not([data-ui-theme='cyber']) :is(#key-setup-chip, .locale-picker-button) {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border-hover);
+  border-radius: 2px;
+  box-shadow: var(--gv-shadow);
+  color: var(--text-primary);
+  font: 600 10px/1 var(--font-sans);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+:root:not([data-ui-theme='cyber']) :is(#key-setup-chip, .locale-picker-button):hover,
+:root:not([data-ui-theme='cyber']) :is(#key-setup-chip, .locale-picker-button):focus-visible {
+  background: var(--surface-3);
+  border-color: var(--accent);
+  transform: none;
+}
+
+:root:not([data-ui-theme='cyber']) #key-setup-chip .material-symbols-outlined,
+:root:not([data-ui-theme='cyber']) .locale-picker-globe {
+  color: var(--signal-warn);
+}
+
+:root:not([data-ui-theme='cyber']) .locale-picker-globe {
+  color: var(--text-secondary);
+}
+
+:root:not([data-ui-theme='cyber']) .locale-picker-popup {
+  border-radius: 2px;
+  box-shadow: var(--gv-shadow-pop);
+}
+
+/* ── Imagery notices & toasts ───────────────────────────────────────── */
+:root:not([data-ui-theme='cyber']) #toast,
+:root:not([data-ui-theme='cyber']) #global-loading-status {
+  background: var(--surface-2);
+  border: 1px solid var(--glass-border-hover);
+  border-radius: 2px;
+  box-shadow: var(--gv-shadow-pop);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  letter-spacing: 0.06em;
+}
+
+/* ── Emoji glyphs in rows: monochrome, so only data carries color ───── */
+:root:not([data-ui-theme='cyber']) :is(.data-toggle-left, .pp-icon:not(.material-symbols-outlined), .btn-icon, .location-pill) > :is(.data-toggle-icon, .data-layer-icon, span:first-child):not(.material-symbols-outlined) {
+  filter: grayscale(1) contrast(1.05);
+}
+
+/* ── Scrollbars ─────────────────────────────────────────────────────── */
+:root:not([data-ui-theme='cyber']) * {
+  scrollbar-color: rgba(138, 155, 168, 0.35) transparent;
+}
+
+:root:not([data-ui-theme='cyber']) *::-webkit-scrollbar-thumb {
+  background: rgba(138, 155, 168, 0.35);
+  border-radius: 0;
+}
+
+:root:not([data-ui-theme='cyber']) *::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 0;
+}
+
+/* ── Brand mark + loader ────────────────────────────────────────────── */
+/* The logo art is teal; shift it onto the console's signal blue. */
+:root:not([data-ui-theme='cyber']) :is(.brand-logo, .loader-logo) {
+  filter: hue-rotate(30deg) saturate(0.85) !important;
+}
+
+:root:not([data-ui-theme='cyber']) .loader-content h2 {
+  font: 600 14px/1 var(--font-sans);
+  letter-spacing: 0.24em;
+}
+
+:root:not([data-ui-theme='cyber']) .loader-status {
+  font: 500 10px/1 var(--font-mono);
+  letter-spacing: 0.1em;
+}
+
+/* ── Removed chrome ─────────────────────────────────────────────────── */
+:root:not([data-ui-theme='cyber']) #intel-hud .hud-top-bar,
+:root:not([data-ui-theme='cyber']) #intel-hud::after,
+:root:not([data-ui-theme='cyber']) #intel-hud .hud-bottom-left,
+:root:not([data-ui-theme='cyber']) #intel-hud .hud-bottom-right,
+:root:not([data-ui-theme='cyber']) #command-dock {
+  display: none !important;
+}
+
+/* Attribution stays on screen (provider terms) but recedes to a whisper. */
+:root:not([data-ui-theme='cyber']) #cesium-credits {
+  bottom: 6px !important;
+  left: 8px !important;
+  font: 8px/1 var(--font-sans) !important;
+  opacity: 0.45;
+  transition: opacity 150ms;
+}
+:root:not([data-ui-theme='cyber']) #cesium-credits:hover {
+  opacity: 1;
+}
+:root:not([data-ui-theme='cyber']) #cesium-credits img {
+  height: 10px !important;
+  width: auto !important;
+}
