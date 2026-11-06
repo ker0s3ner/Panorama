@@ -124,6 +124,16 @@ body {
   left: 0;
 }
 
+/* Cesium sizes its WebGL canvas from the host element. Keep both layers
+   block-level and locked to the host so a sidebar/viewport resize cannot
+   leave a stale intrinsic canvas ratio that visually stretches the map. */
+#cesiumContainer .cesium-widget,
+#cesiumContainer .cesium-widget canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
 /* Unified world-overlay host: detection uses one host-owned blend surface
    beneath the shared text/card canvas; both share one frame path. The root
    holds ONLY the card canvas — it is a stacking context (z-index below), and
