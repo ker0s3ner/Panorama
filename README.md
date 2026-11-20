@@ -54,7 +54,9 @@ Open <http://localhost:4173> and pick **Live Contacts**, **Space Missions**, **E
 docker compose up
 ```
 
-Other scripts: `npm run build`, `npm test`, `npm run format:check`.
+Other scripts: `npm run build`, `npm test` (unit tests), `npm run test:track`, `npm run format:check`, `npm run dev:secure`, `npm run changelog:check`. A Pinokio launcher lives in `pinokio/`.
+
+Current version: 0.3.0. See [CHANGELOG.md](CHANGELOG.md).
 
 ## How it works
 
@@ -65,14 +67,17 @@ Other scripts: `npm run build`, `npm test`, `npm run format:check`.
 
 ```
 src/
-├── main.js        bootstrap, 3D tiles, layer registration
-├── ui.js          panels, HUD, control facade
-├── layers/        weather, wind, cyclones, transit, ALPR, ...
-├── data/          one module per data layer, plus bundled datasets
-├── voice/         realtime voice session and tools
-├── scenes/        cinematic scene director
-└── ...
+├── app/ ui/ view/        bootstrap, panels, HUD, camera
+├── layers/ overlays/     weather, wind, cyclones, transit, ALPR, ...
+├── data/ sources/        one module per data layer, plus bundled datasets
+├── voice/ agent/         realtime voice session and tools
+├── scenes/ director/     cinematic scene director
+├── share/ search/ i18n/  share links, search, translations
+└── ...                   tests sit next to the code as *.test.mjs
 server/            hardened key-brokering proxy
+scripts/           doctor, format, i18n, changelog, build helpers
+tools/             developer tooling (see tools/README.md)
+changelog.d/       changelog fragments, assembled by npm run changelog
 docs/              architecture, design system, data-pack and director docs
 ```
 
