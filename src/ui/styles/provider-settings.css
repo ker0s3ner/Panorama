@@ -1,5 +1,5 @@
 /* ============================================================
-   POWER UP — in-app key setup (dev server only, src/keySetup.js)
+   YOU — local workspace and provider setup (src/keySetup.js)
    Same voice as the first-run launcher: glass card, cyan trim,
    mono kickers. The chip retires once every key is configured.
    ============================================================ */
@@ -96,6 +96,72 @@
   opacity: 1;
   transform: translate(-50%, -50%) scale(1);
   pointer-events: auto;
+}
+
+.you-settings-section {
+  padding: 0.75rem 0 0.4rem;
+  border-top: 1px solid var(--glass-border);
+}
+
+.you-settings-section h3 {
+  margin: 0 0 0.35rem;
+  color: var(--text-primary);
+  font: 600 0.68rem/1.3 var(--font-sans);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.you-settings-section p,
+.you-settings-links small {
+  color: var(--text-secondary);
+  font: 400 0.68rem/1.45 var(--font-sans);
+}
+
+.you-settings-links {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.5rem;
+  padding: 0.5rem 0 0.75rem;
+}
+
+.you-settings-links button {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 0.65rem;
+  min-height: 3.2rem;
+  padding: 0.6rem;
+  color: var(--text-primary);
+  text-align: left;
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid var(--glass-border);
+  border-radius: 0.25rem;
+  cursor: pointer;
+}
+
+.you-settings-links button:hover,
+.you-settings-links button:focus-visible {
+  border-color: var(--accent);
+  outline: none;
+}
+
+.you-settings-links button > span:nth-child(2) {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.you-settings-links strong {
+  font: 600 0.68rem/1.2 var(--font-sans);
+}
+
+.you-settings-links small {
+  font-size: 0.6rem;
+}
+
+@media (max-width: 520px) {
+  .you-settings-links {
+    grid-template-columns: 1fr;
+  }
 }
 
 .key-setup-scanline {

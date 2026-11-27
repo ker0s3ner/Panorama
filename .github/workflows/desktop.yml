@@ -1,0 +1,112 @@
+name: Panorama desktop builds
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  native:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: macOS Intel installer
+            runner: macos-15-intel
+            qt-arch: clang_64
+          - name: macOS Apple Silicon installer
+            runner: macos-15
+            qt-arch: arm64
+          - name: Windows installer
+            runner: windows-2022
+            qt-arch: win64_msvc2022_64
+          - name: Debian package
+            runner: ubuntu-24.04
+            qt-arch: linux_gcc_64
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.8.3'
+          host: ${{ runner.os == 'macOS' && 'mac' || runner.os == 'Windows' && 'windows' || 'linux' }}
+          target: desktop
+          arch: ${{ matrix.qt-arch }}
+          modules: qtwebengine
+          cache: true
+      - name: Install Windows installer generator
+        if: runner.os == 'Windows'
+        run: choco install nsis -y
+      - name: Configure desktop shell
+        run: cmake -S desktop -B build-desktop -DCMAKE_BUILD_TYPE=Release
+      - name: Compile
+        run: cmake --build build-desktop --config Release --parallel 2
+      - name: Bundle Qt on macOS
+        if: runner.os == 'macOS'
+        run: macdeployqt build-desktop/panorama-desktop.app -always-overwrite
+      - name: Bundle Qt on Windows
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: windeployqt --release --webengineprocess --dir build-desktop/deploy build-desktop/Release/panorama-desktop.exe
+      - name: Build installer
+        if: runner.os != 'macOS'
+        run: cpack --config build-desktop/CPackConfig.cmake --verbose
+      - name: Build macOS installer
+        if: runner.os == 'macOS'
+        run: |
+          mkdir -p artifacts
+          productbuild --component build-desktop/panorama-desktop.app /Applications artifacts/Panorama-${{ matrix.qt-arch }}.pkg
+      - name: Collect deliverables
+        shell: bash
+        run: |
+          mkdir -p artifacts
+          find build-desktop -maxdepth 1 -type f \( -name '*.pkg' -o -name '*.exe' -o -name '*.deb' \) -exec cp {} artifacts/ \;
+          if [ "${{ runner.os }}" = "Windows" ]; then cp build-desktop/Release/panorama-desktop.exe artifacts/; fi
+          if [ "${{ runner.os }}" = "Linux" ]; then cp build-desktop/panorama-desktop artifacts/; fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: panorama-${{ matrix.name }}
+          path: artifacts/*
+          if-no-files-found: error
+
+  arch-package:
+    name: Arch Linux package
+    runs-on: ubuntu-24.04
+    needs: native
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: panorama-Debian package
+          path: arch-input
+      - name: Package for Arch Linux
+        run: |
+          mkdir -p arch-work/src arch-work/pkg
+          cp arch-input/panorama-desktop arch-work/src/
+          cp desktop/packaging/PKGBUILD arch-work/src/
+          sha256sum arch-work/src/panorama-desktop | awk '{print $1}' > arch-work/src/checksum
+          python3 -c 'from pathlib import Path; p=Path("arch-work/src/PKGBUILD"); s=p.read_text(); s=s.replace("sha256sums=(\x27SKIP\x27)", "sha256sums=(\x27" + Path("arch-work/src/checksum").read_text().strip() + "\x27)"); p.write_text(s)'
+          docker run --rm --privileged \
+            -v "$PWD/arch-work/src:/work/src" \
+            -v "$PWD/arch-work/pkg:/work/pkg" \
+            archlinux:base-devel bash -lc '
+              pacman -Syu --noconfirm --needed qt6-webengine qt6-base zstd sudo
+              useradd -m builder
+              chown -R builder:builder /work
+              cd /work/src
+              su builder -c "makepkg --noconfirm --cleanbuild --syncdeps"
+              cp ./*.pkg.tar.zst /work/pkg/
+            '
+      - uses: actions/upload-artifact@v4
+        with:
+          name: panorama-Arch-Linux
+          path: arch-work/pkg/*.pkg.tar.zst
+          if-no-files-found: error

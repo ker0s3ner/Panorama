@@ -5,7 +5,7 @@ import {
 } from './voice/cloudVoiceAuth.js';
 
 /**
- * The POWER UP surface — paste a key, get a power.
+ * The YOU workspace surface — provider keys and local setup.
  *
  * A small chip sits bottom-right whenever the app is running under the dev
  * server with keys still missing. It opens a dialog rendered ENTIRELY from
@@ -15,9 +15,9 @@ import {
  * repo-root .env and restarts the dev server — Vite's client then reloads the
  * page itself, and the pasted key is simply *on*. No hand-edited env files.
  *
- * The surface self-destructs where it cannot work: a prod build (no endpoint)
- * or a LAN visitor (loopback-only endpoint) fails the status fetch, and both
- * the chip and the dialog are removed outright.
+ * Key editing is exposed only when the local setup endpoint confirms access.
+ * The workspace controls remain visible without that endpoint, while provider
+ * keys continue to be protected by the local-server setup policy.
  */
 
 import { t, msg, tn, registerUnsavedWork } from './i18n/index.js';
@@ -321,8 +321,8 @@ function buildRow(documentRef, key) {
           ? 'camera limit'
           : ''
         : key.set
-        ? t('{envVar} saved — paste to replace', { envVar })
-        : t('paste {envVar}', { envVar });
+          ? t('{envVar} saved — paste to replace', { envVar })
+          : t('paste {envVar}', { envVar });
       fields.append(input);
     }
     if (key.managed === 'file') {
@@ -432,10 +432,9 @@ export async function initKeySetup({
     status = await response.json();
     if (disposed) return null;
   } catch {
-    // Prod build or non-loopback visitor: the surface cannot function, so it
-    // does not exist. (The README covers .env for headless/self-host setups.)
-    destroy();
-    return null;
+    // Keep the You workspace available even when provider editing is limited
+    // to the local server. Explain that limitation inside the dialog.
+    status = null;
   }
 
   const rowsHost = root.querySelector('[data-key-setup-rows]');
@@ -444,7 +443,11 @@ export async function initKeySetup({
   const closeButton = root.querySelector('[data-key-setup-close]');
   const chipLabel = chip.querySelector('[data-key-setup-chip-label]') || chip;
   const statusLine = root.querySelector('[data-key-setup-status]');
-  const defaultStatusText = statusLine?.textContent || '';
+  const defaultStatusText = status
+    ? statusLine?.textContent || ''
+    : t(
+        'Provider keys can be changed from the machine running your local Panorama server.',
+      );
   let busy = false;
   let oauthBusy = false;
   let open = false;
@@ -457,14 +460,22 @@ export async function initKeySetup({
   const render = (nextStatus) => {
     if (disposed) return;
     status = nextStatus;
-    chipLabel.textContent = keySetupChipLabel(status);
-    chip.title = t('Project keys: {status}', {
-      status: keySetupChipLabel(status),
-    });
+    chipLabel.textContent = t('YOU');
+    chip.title = t('Your Panorama workspace and provider settings');
     chip.setAttribute('aria-label', chip.title);
-    // Fully powered is the owner's clean screen: the chip retires. The dialog
-    // stays reachable this session (and via ?setup=1) to swap or verify keys.
-    chip.hidden = status.setCount >= status.total;
+    // Keep the workspace entry available after setup so keys and account
+    // settings remain discoverable when every provider is configured.
+    chip.hidden = false;
+    if (!status) {
+      if (rowsHost) rowsHost.textContent = '';
+      if (applyButton) applyButton.hidden = true;
+      if (statusLine)
+        statusLine.textContent = t(
+          'Provider keys can be changed from the machine running your local Panorama server.',
+        );
+      return;
+    }
+    if (applyButton) applyButton.hidden = false;
     if (!rowsHost) return;
     rowsHost.textContent = '';
     for (const key of status.keys || [])
@@ -607,6 +618,24 @@ export async function initKeySetup({
 
   chip.addEventListener('click', openDialog);
   closeButton?.addEventListener('click', close);
+  const onWorkspaceShortcut = (event) => {
+    const shortcut = event.target?.closest?.('[data-you-open]');
+    if (!shortcut) return;
+    if (shortcut.dataset.youOpen === 'language') {
+      close();
+      documentRef
+        .querySelector('#locale-picker .locale-picker-button')
+        ?.click?.();
+      return;
+    }
+    const panelId =
+      shortcut.dataset.youOpen === 'layers' ? 'data-panel' : 'pp-toggles';
+    const panel = documentRef.getElementById(panelId);
+    if (panel?.classList.contains('collapsed'))
+      panel.querySelector('.panel-header, .pp-header-row button')?.click?.();
+    close();
+  };
+  root.addEventListener('click', onWorkspaceShortcut);
   applyButton?.addEventListener('click', onApply);
   // Remove buttons are rendered per row; delegate so re-renders stay wired.
   rowsHost?.addEventListener('click', (event) => {
@@ -756,6 +785,7 @@ export async function initKeySetup({
     keyboard.destroy();
     chip.removeEventListener('click', openDialog);
     closeButton?.removeEventListener('click', close);
+    root.removeEventListener('click', onWorkspaceShortcut);
     applyButton?.removeEventListener('click', onApply);
   };
   return { open: openDialog, close, render, destroy };

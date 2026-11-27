@@ -1,0 +1,14 @@
+pkgname=panorama-desktop
+pkgver=0.3.0
+pkgrel=1
+pkgdesc='Panorama desktop workspace for public geospatial intelligence'
+arch=('x86_64')
+url='https://github.com/ker0s3ner/Panorama'
+license=('MIT')
+depends=('qt6-base' 'qt6-webengine')
+source=('panorama-desktop')
+sha256sums=('SKIP')
+
+package() {
+  install -Dm755 "$srcdir/panorama-desktop" "$pkgdir/usr/bin/panorama-desktop"
+}

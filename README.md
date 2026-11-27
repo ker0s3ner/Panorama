@@ -20,17 +20,17 @@ It is vanilla JavaScript on **CesiumJS** and **Vite**, with **Google Photorealis
 
 ## Features
 
-| | |
-|---|---|
-| 🛩️ **Cockpit view** | Ride inside a tracked flight with the camera holding terrain under you |
-| 🎯 **Click to track** | Lock on to any aircraft, ship or satellite, with a fading trail and full metadata |
-| 🎙️ **Voice control** | Fly the camera, filter layers and annotate the world by speaking |
-| 🎨 **Sensor looks** | CRT, night vision, FLIR thermal, noir and snow shaders over the real globe |
-| 🛰️ **Satellite passes** | SGP4 orbits, plus "when does it next rise over me" |
-| 🌦️ **Weather** | GFS and ECMWF wind, radar, satellite clouds, lightning and cyclone tracks (no key) |
-| 📷 **Street level & CCTV** | Mapillary, KartaView, Panoramax and public camera feeds |
-| 🎥 **Scene director** | Record cinematic camera tours and share them as files |
-| 🔗 **Share links** | Camera, layers and a tracked target serialize into a URL |
+|                            |                                                                                    |
+| -------------------------- | ---------------------------------------------------------------------------------- |
+| 🛩️ **Cockpit view**        | Ride inside a tracked flight with the camera holding terrain under you             |
+| 🎯 **Click to track**      | Lock on to any aircraft, ship or satellite, with a fading trail and full metadata  |
+| 🎙️ **Voice control**       | Fly the camera, filter layers and annotate the world by speaking                   |
+| 🎨 **Sensor looks**        | CRT, night vision, FLIR thermal, noir and snow shaders over the real globe         |
+| 🛰️ **Satellite passes**    | SGP4 orbits, plus "when does it next rise over me"                                 |
+| 🌦️ **Weather**             | GFS and ECMWF wind, radar, satellite clouds, lightning and cyclone tracks (no key) |
+| 📷 **Street level & CCTV** | Mapillary, KartaView, Panoramax and public camera feeds                            |
+| 🎥 **Scene director**      | Record cinematic camera tours and share them as files                              |
+| 🔗 **Share links**         | Camera, layers and a tracked target serialize into a URL                           |
 
 Most layers work without an API key. Optional keys (Google Maps, OpenAI, OpenSky, AISStream, TomTom and others) are added inside the app under **POWER UP → Provider Settings** and are brokered through a server-side proxy.
 
@@ -47,6 +47,19 @@ npm run dev
 ```
 
 Open <http://localhost:4173> and pick **Live Contacts**, **Space Missions**, **Environmental** or **Explore Manually**.
+
+The first-launch workspace offers those startup views, the default map is a
+conventional Web Mercator 2D map, and **You** opens local provider settings and
+shortcuts for map and data-layer configuration.
+
+### Desktop shell
+
+The C++/Qt desktop client has a first-launch setup wizard and remembers the
+Panorama server URL. It opens the web application in a native desktop window;
+start a Panorama server first (the development server defaults to
+`http://127.0.0.1:4173`). Desktop installers and packages are built by
+`.github/workflows/desktop.yml` for Intel and Apple Silicon macOS, Windows,
+Debian and Arch Linux.
 
 **Docker:**
 

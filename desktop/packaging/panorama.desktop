@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=Panorama
+Comment=Public data intelligence workspace
+Exec=panorama-desktop
+Terminal=false
+Categories=Science;Geography;Network;

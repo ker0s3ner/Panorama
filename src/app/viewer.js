@@ -107,6 +107,10 @@ export function installTrackpadPinchZoom(
 export function applicationViewerOptions(creditContainer) {
   return {
     sceneMode: Cesium.SceneMode.SCENE2D,
+    // Cesium defaults to an equirectangular map in 2D. That projection stretches
+    // land increasingly toward the poles; the standard Web Mercator view is what
+    // most operators expect from a conventional flat map.
+    mapProjection: new Cesium.WebMercatorProjection(),
     timeline: false,
     animation: false,
     baseLayerPicker: false,
